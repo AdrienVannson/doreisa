@@ -7,6 +7,7 @@ import numpy as np
 import time
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
+
 def init():
     ray.init()
     ray.util.dask.enable_dask_on_ray()
@@ -16,8 +17,9 @@ def init():
 def ray_to_dask(x):
     return x
 
+
 @ray.remote
-class SimulationHead():
+class SimulationHead:
     def __init__(self) -> None:
         self.simulation_data: dict[int, list[ray.ObjectRef]] = {}
 
@@ -63,23 +65,19 @@ class SimulationHead():
         grids = [g[1:-1, 1:-1] for g in grids]
 
         # Return the complete grid
-        return da.block([
-            [grids[3*l+c] for c in range(3)]
-            for l in range(3)
-        ])
+        return da.block([[grids[3 * l + c] for c in range(3)] for l in range(3)])
 
 
-async def start(callback, window_size = 1) -> None:
+async def start(callback, window_size=1) -> None:
     # The workers will be able to access to this actor using its name
     head = SimulationHead.options(
         name="simulation_head",
         namespace="doreisa",
-
         # Schedule the actore on this node
         scheduling_strategy=NodeAffinitySchedulingStrategy(
             node_id=ray.get_runtime_context().get_node_id(),
             soft=False,
-        )
+        ),
     ).remote()
 
     print("Waiting for the workers to join the cluster...")

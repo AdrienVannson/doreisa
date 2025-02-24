@@ -1,6 +1,7 @@
 import numpy as np
 import ray
 
+
 class Client:
     """
     Used by the MPI nodes to send data to the analytic cluster.
