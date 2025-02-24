@@ -1,3 +1,4 @@
+import asyncio
 import ray
 import ray.util.dask
 import dask
@@ -20,24 +21,40 @@ class SimulationHead():
     def __init__(self) -> None:
         self.simulation_data: dict[int, list[ray.ObjectRef]] = {}
 
+        # To wait until all the data for the current step is available
+        self.data_ready = asyncio.Barrier(9 + 1)
+
+        # Tell the MPI workers they can resume the simulation
+        self.next_simulation_step_event = asyncio.Event()
+
     def nb_workers_ready(self) -> int:
         return len(self.simulation_data)
 
     def set_worker_ready(self, worker_id: int) -> None:
         self.simulation_data[int(worker_id)] = []
 
-    def simulation_step(self, worker_id: int, grid: list[ray.ObjectRef]) -> int:
+    async def simulation_step(self, worker_id: int, grid: list[ray.ObjectRef]) -> int:
         # The list for grid prevents ray from dereferencing the object
 
         self.simulation_data[int(worker_id)].append(grid[0])
 
-    def complete_grid(self, step: int) -> np.ndarray | None:
-        grids = []
-        for i in range(9):
-            try:
-                grids.append(self.simulation_data[i][step])
-            except IndexError:
-                return None
+        # Inform that the data is available
+        await self.data_ready.wait()
+
+        # Wait until the data is not needed anymore
+        await self.next_simulation_step_event.wait()
+
+    def simulation_step_complete(self) -> None:
+        """
+        Tell all the waiting MPI workers that the data is not needed anymore.
+        """
+        self.next_simulation_step_event.set()
+
+    async def complete_grid(self, step: int) -> np.ndarray | None:
+        # Wait until all the data for the step is available
+        await self.data_ready.wait()
+
+        grids = [self.simulation_data[i][step] for i in range(9)]
 
         # Make available in dask
         grids = [da.from_delayed(ray_to_dask(g), (12, 12), dtype=float) for g in grids]
@@ -52,7 +69,7 @@ class SimulationHead():
         ])
 
 
-def start(callback) -> None:
+async def start(callback) -> None:
     # The workers will be able to access to this actor using its name
     head = SimulationHead.options(
         name="simulation_head",
@@ -84,3 +101,5 @@ def start(callback) -> None:
 
         callback(complete_grid, step)
         step += 1
+
+        head.simulation_step_complete.remote()
