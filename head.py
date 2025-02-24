@@ -26,6 +26,8 @@ class SimulationHead():
         self.simulation_data[int(worker_id)] = []
 
     def simulation_step(self, worker_id: int, grid: list[ray.ObjectRef]) -> int:
+        # The list for grid prevents ray from dereferencing the object
+
         self.simulation_data[int(worker_id)].append(grid[0])
 
     def complete_grid(self, step: int) -> np.ndarray | None:
