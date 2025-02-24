@@ -1,5 +1,6 @@
 import ray
 import ray.util.dask
+from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 import dask
 import dask.array as da
 import time
@@ -49,7 +50,16 @@ class SimulationHead():
 
 
 # The workers will be able to access to this actor using its name
-counter = SimulationHead.options(name="simulation_head", namespace="doreisa").remote()
+counter = SimulationHead.options(
+    name="simulation_head",
+    namespace="doreisa",
+
+    # Schedule the actore on this node
+    scheduling_strategy=NodeAffinitySchedulingStrategy(
+        node_id=ray.get_runtime_context().node_id,
+        soft=False,
+    )
+).remote()
 
 print("Waiting for the workers to join the cluster...")
 
@@ -71,10 +81,3 @@ while step < 1000:
 
     plt.imsave(f"output/{str(step).zfill(3)}.png", complete_grid, cmap='gray')
     step += 1
-
-
-
-
-import doreisa
-
-doreisa.init()
