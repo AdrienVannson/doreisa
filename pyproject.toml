@@ -1,5 +1,5 @@
 [project]
-name = "dask_on_ray_test"
+name = "doreisa"
 version = "0.1.0"
 description = ""
 authors = [

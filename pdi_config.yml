@@ -14,7 +14,7 @@ plugins:
       init:
         with: {rank: $rank}
         exec: |
-          from lib import Client
+          from doreisa.simulation_node import Client
           client = Client(rank)
 
       simulation_step:

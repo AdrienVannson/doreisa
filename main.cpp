@@ -22,7 +22,7 @@ const int PROCESSOR_GRID_SIZE = 3;
 
 const int TAG_CELL_VALUE = 0;
 
-int NB_SIMULATION_STEPS = 500;
+int NB_SIMULATION_STEPS = 100;
 
 // The values around the grid are received from the neighbors
 double GRID[LOCAL_SIZE+2][LOCAL_SIZE+2];

@@ -2,11 +2,15 @@ import numpy as np
 import ray
 
 class Client:
+    """
+    Used by the MPI nodes to send data to the analytic cluster.
+    """
+
     def __init__(self, rank: int) -> None:
         self.rank = rank
         print(f"New client created (rank={rank})")
 
-        self.head = ray.get_actor("simulation_head", namespace="simulation_namespace")
+        self.head = ray.get_actor("simulation_head", namespace="doreisa")
         self.head.set_worker_ready.remote(self.rank)
 
     def simulation_step(self, temperatures: np.ndarray) -> None:

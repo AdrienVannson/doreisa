@@ -5,9 +5,9 @@ import dask.array as da
 import time
 import numpy as np
 from matplotlib import pyplot as plt
+import doreisa
 
-ray.init()
-ray.util.dask.enable_dask_on_ray()
+doreisa.init()
 
 @dask.delayed
 def ray_to_dask(x):
@@ -49,7 +49,7 @@ class SimulationHead():
 
 
 # The workers will be able to access to this actor using its name
-counter = SimulationHead.options(name="simulation_head", namespace="simulation_namespace").remote()
+counter = SimulationHead.options(name="simulation_head", namespace="doreisa").remote()
 
 print("Waiting for the workers to join the cluster...")
 
@@ -71,3 +71,10 @@ while step < 1000:
 
     plt.imsave(f"output/{str(step).zfill(3)}.png", complete_grid, cmap='gray')
     step += 1
+
+
+
+
+import doreisa
+
+doreisa.init()
