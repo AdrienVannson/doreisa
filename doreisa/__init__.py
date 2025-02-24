@@ -69,7 +69,7 @@ class SimulationHead():
         ])
 
 
-async def start(callback) -> None:
+async def start(callback, window_size = 1) -> None:
     # The workers will be able to access to this actor using its name
     head = SimulationHead.options(
         name="simulation_head",
@@ -91,15 +91,19 @@ async def start(callback) -> None:
 
     step = 0
 
-    while step < 1000:
-        complete_grid = ray.get(head.complete_grid.remote(step))
-        while complete_grid is None:
-            time.sleep(0.1)
-            complete_grid = ray.get(head.complete_grid.remote(step))
+    grids = []
 
+    while step < 10000:
+        complete_grid = ray.get(head.complete_grid.remote(step))
         assert isinstance(complete_grid, da.Array)
 
-        callback(complete_grid, step)
+        grids.append(complete_grid)
+
+        if len(grids) > window_size:
+            grids = grids[1:]
+        if len(grids) == window_size:
+            callback(grids, step)
+
         step += 1
 
         head.simulation_step_complete.remote()

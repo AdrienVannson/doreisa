@@ -14,8 +14,6 @@ class Client:
         ray.get(self.head.set_worker_ready.remote(self.rank))
 
     def simulation_step(self, temperatures: np.ndarray) -> None:
-        print(f"New simulation step from {self.rank}")
-
         ref = ray.put(temperatures)
 
         future = self.head.simulation_step.remote(self.rank, [ref])
