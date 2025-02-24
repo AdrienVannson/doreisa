@@ -1,0 +1,23 @@
+metadata:
+  rank: int
+
+data:
+  temperatures:
+    type: array
+    subtype: double
+    size: [12, 12]
+
+plugins:
+  # trace: ~
+  pycall:
+    on_event:
+      init:
+        with: {rank: $rank}
+        exec: |
+          from lib import Client
+          client = Client(rank)
+
+      simulation_step:
+        with: {temperatures: $temperatures}
+        exec: |
+          client.simulation_step(temperatures)
