@@ -5,7 +5,7 @@ data:
   temperatures:
     type: array
     subtype: double
-    size: [12, 12]
+    size: [32, 32]
 
 plugins:
   # trace: ~

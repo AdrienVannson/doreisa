@@ -14,7 +14,7 @@ int RANK;
 int PROCESSOR_LINE, PROCESSOR_COLUMN;
 
 // The current processor is responsible for the simulation of a LOCAL_SIZE * LOCAL_SIZE grid
-const int LOCAL_SIZE = 10;
+const int LOCAL_SIZE = 30;
 
 // The global grid is a PROCESSOR_GRID_SIZE*PROCESSOR_GRID_SIZE grid, each cell being simulated by a processor
 // PROCESSOR_GRID_SIZE = sqrt(NB_PROCESSORS)
@@ -22,7 +22,7 @@ const int PROCESSOR_GRID_SIZE = 3;
 
 const int TAG_CELL_VALUE = 0;
 
-int NB_SIMULATION_STEPS = 100;
+int NB_SIMULATION_STEPS = 1000;
 
 // The values around the grid are received from the neighbors
 double GRID[LOCAL_SIZE+2][LOCAL_SIZE+2];

@@ -11,7 +11,7 @@ class Client:
         print(f"New client created (rank={rank})")
 
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
-        self.head.set_worker_ready.remote(self.rank)
+        ray.get(self.head.set_worker_ready.remote(self.rank))
 
     def simulation_step(self, temperatures: np.ndarray) -> None:
         print(f"New simulation step from {self.rank}")

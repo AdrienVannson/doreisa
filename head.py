@@ -6,6 +6,7 @@ import dask.array as da
 doreisa.init()
 
 def simulation_callback(grid: da.Array, step: int):
-    plt.imsave(f"output/{str(step).zfill(3)}.png", grid, cmap='gray')
+    if step % 30 == 0:
+        plt.imsave(f"output/{str(step // 30).zfill(3)}.png", grid, cmap='gray')
 
 asyncio.run(doreisa.start(simulation_callback))
