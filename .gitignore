@@ -1,5 +1,4 @@
 output
 .venv
 __pycache__
-simulation
 *.ipynb

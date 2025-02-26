@@ -1,6 +1,6 @@
 import asyncio
 from matplotlib import pyplot as plt
-import doreisa
+import doreisa.head_node as doreisa
 import dask.array as da
 
 doreisa.init()

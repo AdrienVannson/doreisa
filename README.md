@@ -11,12 +11,11 @@ ray start --head --port=4242 --include-dashboard=True
 
 python3 head.py &
 
-
-Compile Docker:
-sudo docker build --pull --rm -f 'Dockerfile' -t 'daskonray:latest' '.' 
+Build Docker:
+podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa_simulation:latest' 'docker/simulation'
 
 Run Docker:
-sudo docker run --rm -it -v "$(pwd)":/workspace -w /workspace 'daskonray:latest' /bin/bash
+docker run --rm -it --shm-size=2gb -v "$(pwd)":/workspace -w /workspace 'doreisa_simulation:latest' /bin/bash
 
 
 poetry install --no-interaction --no-ansi --no-root
