@@ -59,7 +59,7 @@ class SimulationHead:
         grids = [self.simulation_data[i][step] for i in range(9)]
 
         # Make available in dask
-        grids = [da.from_delayed(ray_to_dask(g), (1002, 1002), dtype=float) for g in grids]
+        grids = [da.from_delayed(ray_to_dask(g), (32, 32), dtype=float) for g in grids]
 
         # Remove the ghost cells
         grids = [g[1:-1, 1:-1] for g in grids]
