@@ -24,7 +24,7 @@ class SimulationHead:
         self.simulation_data: dict[int, list[ray.ObjectRef]] = {}
 
         # To wait until all the data for the current step is available
-        self.data_ready = asyncio.Barrier(4 + 1)
+        self.data_ready = asyncio.Barrier(9 + 1)
 
         # Tell the MPI workers they can resume the simulation
         self.next_simulation_step_event = asyncio.Event()
@@ -82,7 +82,7 @@ async def start(callback, window_size=1) -> None:
 
     print("Waiting for the workers to join the cluster...")
 
-    while ray.get(head.nb_workers_ready.remote()) < 4:
+    while ray.get(head.nb_workers_ready.remote()) < 9:
         time.sleep(0.1)
 
     print("All workers have joined! Simulation ongoing...")

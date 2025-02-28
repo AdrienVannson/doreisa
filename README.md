@@ -9,7 +9,7 @@ Start the head node:
 ray start --head --port=4242 --include-dashboard=True
 ```
 
-python3 head.py &
+python3 head.py
 
 Build Docker:
 podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa_simulation:latest' 'docker/simulation'
