@@ -18,4 +18,4 @@ def simulation_callback(grids: list[da.Array], step: int):
         )
 
 
-asyncio.run(doreisa.start(simulation_callback, window_size=2))
+asyncio.run(doreisa.start(simulation_callback, ["temperatures"], window_size=2))

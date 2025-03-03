@@ -36,8 +36,10 @@ poetry install --no-interaction --no-ansi --no-root
     Let the user choose if the chunks are stored on the same node, or in another node
     Using ray placement groups?
     Dynamically to avoid being out of memory?
- - The analytics might want to do a convolution with a small kernel. In this case, we want to avoid sending all the data
+ - The analytics might want to do a convolution with a small kernel. In this case, we want to avoid sending all the data. Measure this
  - See if Infiniband is not supported in Ray
 
+
+!! Prepare a presentation about the work for now -> demo
 
 Doreisa
