@@ -11,18 +11,10 @@ RUN apt-get update && apt-get install -y pdidev-archive-keyring libpdi-dev pdipl
 # Install MPI
 RUN apt-get install -y libopenmpi-dev
 
-# Install ray
-#RUN pip install --break-system-packages ray[client]==2.42.1
-
 WORKDIR /venv/
 COPY requirements.txt  /venv/
 
-RUN pip install -r requirements.txt  --break-system-packages
+RUN pip install -r requirements.txt --break-system-packages
 
 # Disable Ray's data collection
 RUN ray disable-usage-stats
-
-# TODO delete (to debug network issues)
-#RUN apt-get install -y iputils-ping
-
-#docker run --rm -it --shm-size=2gb --network=host -v "$(pwd)":/workspace -w /workspace 'doreisa_simulation:latest' /bin/bash
