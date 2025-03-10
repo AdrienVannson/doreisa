@@ -1,5 +1,17 @@
 # Dask-on-Ray Enabled In Situ Analytics
 
+## Installation
+
+### Using containers
+
+Doreisa can be install using containers: a Docker image is built. This image can then be used with singularity.
+
+On Grid5000, first, enable Docker with `g5k-setup-docker -t`. This is only needed to build the images, not to execute the code.
+
+Execute the building script: `$ ./build-images.sh`. This will build the Docker images, save them to a tar file and convert them to singularity images.
+
+## Notes (TODEL)
+
 mpic++ main.cpp -Wl,--copy-dt-needed-entries -lpdi -o simulation
 pdirun mpirun -n 9 --oversubscribe --allow-run-as-root ./simulation
 
@@ -13,6 +25,14 @@ python3 head.py
 
 Build Docker:
 podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa_simulation:latest' 'docker/simulation'
+
+docker build --pull --rm -f 'Dockerfile' -t 'doreisa:latest' '.'
+docker save doreisa:latest -o doreisa-image.tar
+singularity build ./doreisa.sif docker-archive://doreisa-image.tar
+singularity build ./doreisa.sif docker-archive://doreisa-image.tar
+mpirun -n 3 singularity exec ./doreisa.sif hostname
+
+If needed: singularity shell
 
 Run Podman:
 podman run --rm -it --shm-size=2gb --network host -p 8000:8000 -v "$(pwd)":/workspace -w /workspace 'doreisa_simulation:latest' /bin/bash
@@ -43,3 +63,7 @@ poetry install --no-interaction --no-ansi --no-root
 !! Prepare a presentation about the work for now -> demo
 
 Doreisa
+
+
+mpirun -machinefile $OAR_NODEFILE singularity exec ./doreisa.sif hostname
+mpirun -machinefile $OAR_NODEFILE singularity exec ./doreisa.sif 
