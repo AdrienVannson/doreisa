@@ -8,9 +8,11 @@ Doreisa can be install using containers: a Docker image is built. This image can
 
 On Grid5000, first, enable Docker with `g5k-setup-docker -t`. This is only needed to build the images, not to execute the code.
 
-Execute the building script: `$ ./build-images.sh`. This will build the Docker images, save them to a tar file and convert them to singularity images.
+Execute the building script: `$ ./build-images.sh`. This will build the Docker images, save them to tar files and convert them to singularity images.
 
 ## Developement
+
+### Update the Python environment
 
 To add dependencies to the Python environment, add them via poetry. Then, export them to `requirements.txt` via:
 
