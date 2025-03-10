@@ -10,6 +10,16 @@ On Grid5000, first, enable Docker with `g5k-setup-docker -t`. This is only neede
 
 Execute the building script: `$ ./build-images.sh`. This will build the Docker images, save them to a tar file and convert them to singularity images.
 
+## Developement
+
+To add dependencies to the Python environment, add them via poetry. Then, export them to `requirements.txt` via:
+
+```
+poetry export -f requirements.txt --output requirements.txt
+```
+
+This file should be copied in `docker/analytics/` and `docker/simulation`. Remove numpy from the file in `docker/simulation` since another version is already installed with PDI.
+
 ## Notes (TODEL)
 
 mpic++ main.cpp -Wl,--copy-dt-needed-entries -lpdi -o simulation
