@@ -2,8 +2,17 @@ import asyncio
 from matplotlib import pyplot as plt
 import doreisa.head_node as doreisa
 import dask.array as da
+import numpy as np
 
 doreisa.init()
+
+
+def preprocessing(chunks: tuple[np.array], rank: int, timestep: int) -> dict[tuple[str, tuple[int, ...]], np.array]:
+    temperatures = chunks[0]
+
+    return {
+        ("temperatures", (rank % 3, rank // 3)): temperatures[1:-1, 1:-1],
+    }
 
 
 def simulation_callback(grids: list[da.Array], step: int):
@@ -18,4 +27,4 @@ def simulation_callback(grids: list[da.Array], step: int):
         )
 
 
-asyncio.run(doreisa.start(simulation_callback, ["temperatures"], window_size=2))
+asyncio.run(doreisa.start(preprocessing, simulation_callback, ["temperatures"], window_size=2))

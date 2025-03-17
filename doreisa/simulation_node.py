@@ -1,6 +1,7 @@
 import numpy as np
 import ray
 from dataclasses import dataclass
+from typing import Callable
 
 
 @dataclass
@@ -17,26 +18,21 @@ class Client:
     array.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, rank: int) -> None:
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
 
+        self.rank = rank
         self.timestep = 0
 
-        # The chunks that the client is in charge of updating
-        self.chunks: list[_Chunk] = []
+        self.preprocessing_callback: Callable = ray.get(self.head.get_preprocessing_callback.remote())
 
-    def create_array(self, name: str, nb_chunks_per_dim: tuple[int, ...], chunk_position: tuple[int, ...]) -> None:
-        self.head.create_array.remote(name, nb_chunks_per_dim)
+    def simulation_step(self, *chunks: np.ndarray) -> None:
+        chunks: dict[tuple[str, tuple[int, ...]], np.array] = self.preprocessing_callback(chunks, self.rank, self.timestep)
 
-        self.chunks.append(_Chunk(name, chunk_position))
+        for chunk_info, chunk in chunks.items():
+            chunk_ref = ray.put(chunk)
 
-    def simulation_step(self, chunks: list[np.ndarray]) -> None:
-        assert len(chunks) == len(self.chunks)
-
-        for chunk, chunk_info in zip(chunks, self.chunks):
-            ref = ray.put(chunk)
-
-            future = self.head.add_chunk.remote(chunk_info.array_name, self.timestep, chunk_info.chunk_position, [ref])
+            future = self.head.add_chunk.remote(chunk_info[0], self.timestep, chunk_info[1], [chunk_ref])
 
             # Wait until the data is processed before returning to the simulation
             # TODO the synchronization is not that good

@@ -15,10 +15,9 @@ plugins:
         with: {rank: $rank}
         exec: |
           from doreisa.simulation_node import Client
-          client = Client()
-          client.create_array("temperatures", (3, 3), (rank % 3, rank // 3))
+          client = Client(rank)
 
       simulation_step:
         with: {temperatures: $temperatures}
         exec: |
-          client.simulation_step([temperatures])
+          client.simulation_step(temperatures)

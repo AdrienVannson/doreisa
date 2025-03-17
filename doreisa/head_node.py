@@ -6,6 +6,7 @@ import dask.array as da
 import numpy as np
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 import math
+from typing import Callable
 
 
 def init():
@@ -44,16 +45,19 @@ class SimulationHead:
         # This event is called when a new array is created
         self.new_array_event = asyncio.Event()
 
+        self.preprocessing_callback: Callable | None = None
+
+        self.create_array("temperatures", (3, 3))
+
+    def get_preprocessing_callback(self) -> Callable:
+        return self.preprocessing_callback
+
+    def set_preprocessing_callback(self, callback: Callable) -> None:
+        self.preprocessing_callback = callback
+
     def create_array(self, name: str, nb_chunks_per_dim: tuple[int, ...]) -> None:
-        if arr := self.arrays.get(name):
-            if arr.nb_chunks_per_dim != nb_chunks_per_dim:
-                raise ValueError(
-                    "two different values of `nb_chunks_per_dim` provided for the same array"
-                )
-        
-        else:
-            self.arrays[name] = DaskArray(nb_chunks_per_dim)
-            self.new_array_event.set()
+        self.arrays[name] = DaskArray(nb_chunks_per_dim)
+        self.new_array_event.set()
 
     async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk: list[ray.ObjectRef]) -> None:
         # The list for grid prevents ray from dereferencing the object
@@ -94,18 +98,14 @@ class SimulationHead:
 
         # Make available in dask
         # TODO don't hardcode the size
-        chunks = {k: da.from_delayed(ray_to_dask(v), (32, 32), dtype=float) for k, v in array.chunks[-1].items()}
-
-        # Remove the ghost cells
-        # TODO don't do it here
-        chunks = {k: v[1:-1, 1:-1] for k, v in chunks.items()}
+        chunks = {k: da.from_delayed(ray_to_dask(v), (30, 30), dtype=float) for k, v in array.chunks[-1].items()}
 
         # TODO only works for 2D
         # Return the complete grid
         return da.block([[chunks[(i, j)] for i in range(array.nb_chunks_per_dim[0])] for j in range(array.nb_chunks_per_dim[1])])
 
 
-async def start(callback, array_names: list[str], window_size=1) -> None:
+async def start(preprocessing_callback, callback, array_names: list[str], window_size=1) -> None:
     # The workers will be able to access to this actor using its name
     head = SimulationHead.options(
         name="simulation_head",
@@ -116,6 +116,8 @@ async def start(callback, array_names: list[str], window_size=1) -> None:
             soft=False,
         ),
     ).remote()
+
+    ray.get(head.set_preprocessing_callback.remote(preprocessing_callback))
 
     print("Waiting to start the simulation...")
 
