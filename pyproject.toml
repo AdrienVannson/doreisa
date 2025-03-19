@@ -30,3 +30,4 @@ poethepoet = "^0.32.2"
 
 [tool.poe.tasks]
 format = "ruff format"
+typecheck = "pyright doreisa head.py"
