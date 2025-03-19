@@ -28,5 +28,5 @@ def simulation_callback(temperatures: list[da.Array], timestep: int):
 
 
 asyncio.run(doreisa.start(simulation_callback, [
-    doreisa.DaskArray("temperatures", (3, 3), window_size=2, preprocess=preprocess_temperatures),
+    doreisa.DaskArrayInfo("temperatures", (3, 3), window_size=2, preprocess=preprocess_temperatures),
 ]))
