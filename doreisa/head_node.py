@@ -4,7 +4,6 @@ import ray
 import ray.util.dask
 import dask
 import dask.array as da
-import numpy as np
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 import math
 from typing import Callable
@@ -118,7 +117,7 @@ async def start(simulation_callback, arrays_description: list[DaskArray]) -> Non
     head = SimulationHead.options(
         name="simulation_head",
         namespace="doreisa",
-        # Schedule the actore on this node
+        # Schedule the actor on this node
         scheduling_strategy=NodeAffinitySchedulingStrategy(
             node_id=ray.get_runtime_context().get_node_id(),
             soft=False,
