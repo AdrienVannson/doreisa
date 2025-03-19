@@ -40,6 +40,8 @@ class _DaskArrayData:
         # chunks[t][(x, y, z, ...)] is the chunk (x, y, z, ...) of the array at time t
         self.chunks: list[dict[tuple[int, ...], da.Array]] = []
 
+        self.full_arrays: list[da.Array] = []
+
         # To wait until all the data for the current step is available
         self.data_ready = asyncio.Barrier(self.nb_chunks + 1)
 
@@ -70,6 +72,15 @@ class _DaskArrayData:
         # TODO only works for 2D
         # Return the complete grid
         return da.block([[self.chunks[-1][(i, j)] for i in range(self.description.nb_chunks_per_dim[0])] for j in range(self.description.nb_chunks_per_dim[1])])
+
+    async def get_full_array_hist(self) -> list[da.Array]:
+        """
+        Return a list of size up to `window_size` with the full arrays for the previous timesteps.
+        """
+        if len(self.full_arrays) == self.description.window_size:
+            self.full_arrays = self.full_arrays[1:]
+        self.full_arrays.append(await self.get_full_array())
+        return self.full_arrays
 
 
 @dask.delayed
@@ -106,11 +117,11 @@ class SimulationHead:
         for array in self.arrays.values():
             array.next_simulation_step_event.set()
 
-    async def get_all_arrays(self) -> dict[str, da.Array]:
+    async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """
         Return all the arrays for the current timestep. Should be called only once per timestep.
         """
-        return {name: await array.get_full_array() for name, array in self.arrays.items()}
+        return {name: await array.get_full_array_hist() for name, array in self.arrays.items()}
 
 
 async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) -> None:

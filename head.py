@@ -17,14 +17,13 @@ def preprocess_temperatures(temperatures: np.ndarray) -> np.ndarray:
 def simulation_callback(temperatures: list[da.Array], timestep: int):
     if timestep % 100 == 0 and timestep:
         print("Simulation step", timestep)
-        # temp = temperatures[1]
-        temp = temperatures
+        temp = temperatures[1]
         plt.imsave(f"temperatures/{str(timestep // 100).zfill(3)}.png", temp, cmap="gray")
 
-        # diff = temperatures[1] - temperatures[0]
-        # plt.imsave(
-        #     f"derivatives/{str(timestep // 100).zfill(3)}.png", 5 * diff, cmap="gray"
-        # )
+        diff = temperatures[1] - temperatures[0]
+        plt.imsave(
+            f"derivatives/{str(timestep // 100).zfill(3)}.png", 5 * diff, cmap="gray"
+        )
 
 
 asyncio.run(doreisa.start(simulation_callback, [
