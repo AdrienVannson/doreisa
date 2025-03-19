@@ -29,7 +29,7 @@ class Client:
     def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        future = self.head.add_chunk.remote(array_name, self.timestep, chunk_position, [ray.put(chunk)])
+        future = self.head.add_chunk.remote(array_name, self.timestep, chunk_position, [ray.put(chunk)], chunk.shape)
 
         # Wait until the data is processed before returning to the simulation
         # TODO the synchronization is not that good

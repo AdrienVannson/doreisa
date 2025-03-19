@@ -37,7 +37,7 @@ class _DaskArrayData:
         self.nb_chunks = math.prod(description.nb_chunks_per_dim)
 
         # chunks[t][(x, y, z, ...)] is the chunk (x, y, z, ...) of the array at time t
-        self.chunks: list[dict[tuple[int, ...], ray.ObjectRef]] = []
+        self.chunks: list[dict[tuple[int, ...], da.Array]] = []
 
         # To wait until all the data for the current step is available
         self.data_ready = asyncio.Barrier(self.nb_chunks + 1)
@@ -52,13 +52,9 @@ class _DaskArrayData:
         # Wait until all the data for the step is available
         await self.data_ready.wait()
 
-        # Make available in dask
-        # TODO don't hardcode the size
-        chunks = {k: da.from_delayed(ray_to_dask(v), (30, 30), dtype=float) for k, v in self.chunks[-1].items()}
-
         # TODO only works for 2D
         # Return the complete grid
-        return da.block([[chunks[(i, j)] for i in range(self.description.nb_chunks_per_dim[0])] for j in range(self.description.nb_chunks_per_dim[1])])
+        return da.block([[self.chunks[-1][(i, j)] for i in range(self.description.nb_chunks_per_dim[0])] for j in range(self.description.nb_chunks_per_dim[1])])
 
 
 @dask.delayed
@@ -80,9 +76,12 @@ class SimulationHead:
         """
         return {name: array.description.preprocess for name, array in self.arrays.items()}
 
-    async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk: list[ray.ObjectRef]) -> None:
+    async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
         # Putting the chunk in a list prevents ray from dereferencing the object.
         chunk = chunk[0]
+
+        # Convert to a dask array
+        chunk = da.from_delayed(ray_to_dask(chunk), chunk_size, dtype=float)
 
         array = self.arrays[array_name]
         if len(array.chunks) <= timestep:
