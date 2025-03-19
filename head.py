@@ -7,7 +7,7 @@ import numpy as np
 doreisa.init()
 
 
-def preprocess_temperatures(temperatures: np.array) -> np.array:
+def preprocess_temperatures(temperatures: np.ndarray) -> np.ndarray:
     """
     Remove the ghost cells from the array.
     """

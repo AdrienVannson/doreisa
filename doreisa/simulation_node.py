@@ -24,7 +24,7 @@ class Client:
         self.rank = rank
         self.timestep = 0
 
-        self.preprocessing_callbacks: Callable = ray.get(self.head.preprocessing_callbacks.remote())
+        self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
     def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
         chunk = self.preprocessing_callbacks[array_name](chunk)

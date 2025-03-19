@@ -4,11 +4,11 @@ import ray
 import ray.util.dask
 import dask
 import dask.array as da
-from dask.array.core import Array as DaskArray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 import math
 from typing import Callable
 from dataclasses import dataclass
+from typing import Any
 
 
 def init():
@@ -38,7 +38,7 @@ class _DaskArrayData:
         self.nb_chunks = math.prod(description.nb_chunks_per_dim)
 
         # chunks[t][(x, y, z, ...)] is the chunk (x, y, z, ...) of the array at time t
-        self.chunks: list[dict[tuple[int, ...], da.core.Array]] = []
+        self.chunks: list[dict[tuple[int, ...], da.Array]] = []
 
         # To wait until all the data for the current step is available
         self.data_ready = asyncio.Barrier(self.nb_chunks + 1)
@@ -46,7 +46,7 @@ class _DaskArrayData:
         # Tell the MPI workers they can resume the simulation
         self.next_simulation_step_event = asyncio.Event()
 
-    async def get_full_array(self) -> DaskArray:
+    async def get_full_array(self) -> da.Array:
         """
         Return the full array for the current timestep.
         """
@@ -77,12 +77,11 @@ class SimulationHead:
         """
         return {name: array.description.preprocess for name, array in self.arrays.items()}
 
-    async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
+    async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
         # Putting the chunk in a list prevents ray from dereferencing the object.
-        chunk = chunk[0]
 
         # Convert to a dask array
-        chunk = da.from_delayed(ray_to_dask(chunk), chunk_size, dtype=float)
+        chunk = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
 
         array = self.arrays[array_name]
         if len(array.chunks) <= timestep:
@@ -105,7 +104,7 @@ class SimulationHead:
         for array in self.arrays.values():
             array.next_simulation_step_event.set()
 
-    async def get_all_arrays(self) -> dict[str, DaskArray]:
+    async def get_all_arrays(self) -> dict[str, da.Array]:
         """
         Return all the arrays for the current timestep. Should be called only once per timestep.
         """
@@ -114,7 +113,7 @@ class SimulationHead:
 
 async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) -> None:
     # The workers will be able to access to this actor using its name
-    head = SimulationHead.options(
+    head: Any = SimulationHead.options(
         name="simulation_head",
         namespace="doreisa",
         # Schedule the actor on this node
@@ -129,7 +128,7 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) ->
     step = 0
 
     while True:
-        all_arrays = ray.get(head.get_all_arrays.remote())
+        all_arrays: dict[str, da.Array] = ray.get(head.get_all_arrays.remote())
 
         if step == 0:
             print("Simulation started!")
