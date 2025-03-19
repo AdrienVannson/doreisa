@@ -69,9 +69,15 @@ class _DaskArrayData:
         # Wait until all the data for the step is available
         await self.data_ready.wait()
 
-        # TODO only works for 2D
+        def create_blocks(shape: tuple[int, ...], position: tuple[int, ...]=()):
+            # Recursively create the blocks
+            if not shape:
+                return self.chunks[-1][position]
+
+            return [create_blocks(shape[1:], position + (i,)) for i in range(shape[0])]
+
         # Return the complete grid
-        return da.block([[self.chunks[-1][(i, j)] for i in range(self.description.nb_chunks_per_dim[0])] for j in range(self.description.nb_chunks_per_dim[1])])
+        return da.block(create_blocks(self.description.nb_chunks_per_dim))
 
     async def get_full_array_hist(self) -> list[da.Array]:
         """
