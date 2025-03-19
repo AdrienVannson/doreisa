@@ -46,6 +46,20 @@ class _DaskArrayData:
         # Tell the MPI workers they can resume the simulation
         self.next_simulation_step_event = asyncio.Event()
 
+    async def add_chunk(self, timestep: int, position: tuple[int, ...], chunk: da.Array) -> None:
+        if len(self.chunks) <= timestep:
+            self.chunks.append({})
+
+        # TODO is it too strict for some simulations?
+        assert timestep == len(self.chunks) - 1
+        self.chunks[timestep][position] = chunk
+
+        # Inform that the data is available
+        await self.data_ready.wait()
+
+        # Wait until the data is not needed anymore
+        await self.next_simulation_step_event.wait()
+
     async def get_full_array(self) -> da.Array:
         """
         Return the full array for the current timestep.
@@ -81,21 +95,9 @@ class SimulationHead:
         # Putting the chunk in a list prevents ray from dereferencing the object.
 
         # Convert to a dask array
-        chunk = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
+        chunk: da.Array = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
 
-        array = self.arrays[array_name]
-        if len(array.chunks) <= timestep:
-            array.chunks.append({})
-
-        # TODO is it too strict for some simulations?
-        assert timestep == len(array.chunks) - 1
-        array.chunks[timestep][position] = chunk
-
-        # Inform that the data is available
-        await array.data_ready.wait()
-
-        # Wait until the data is not needed anymore
-        await array.next_simulation_step_event.wait()
+        await self.arrays[array_name].add_chunk(timestep, position, chunk)
 
     def simulation_step_complete(self) -> None:
         """
