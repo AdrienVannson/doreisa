@@ -36,7 +36,7 @@ ray start --head --port=4242 --include-dashboard=True
 python3 head.py
 
 Build Docker:
-podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa_simulation:latest' 'docker/simulation'
+podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa-simulation:latest' 'docker/simulation'
 
 docker build --pull --rm -f 'Dockerfile' -t 'doreisa:latest' '.'
 docker save doreisa:latest -o doreisa-image.tar
@@ -47,7 +47,7 @@ mpirun -n 3 singularity exec ./doreisa.sif hostname
 If needed: singularity shell
 
 Run Podman:
-podman run --rm -it --shm-size=2gb --network host -p 8000:8000 -v "$(pwd)":/workspace -w /workspace 'doreisa_simulation:latest' /bin/bash
+podman run --rm -it --shm-size=2gb --network host -v "$(pwd)":/workspace -w /workspace 'doreisa-simulation:latest' /bin/bash
 
 Run Docker:
 docker run --rm -it --shm-size=2gb -v "$(pwd)":/workspace -w /workspace 'doreisa_simulation:latest' /bin/bash
@@ -68,9 +68,19 @@ poetry install --no-interaction --no-ansi --no-root
     Let the user choose if the chunks are stored on the same node, or in another node
     Using ray placement groups?
     Dynamically to avoid being out of memory?
+
+    We should be able, from to client, to choose a function to execute on the numpy array as soon as available. For example, compute an integral without copying the data, and then sending only the required data.
+
  - The analytics might want to do a convolution with a small kernel. In this case, we want to avoid sending all the data. Measure this
  - See if Infiniband is not supported in Ray
 
+ - PDI makes a copy only when the data is on the GPU
+
+ - Adastra (Ruche)?
+
+ - Contract: choose which piece of data are needed. We might not want all the available arrays -> don't make a copy in that case. For example, only do the `ray.put` every 100 iterations
+
+ - Would be nice to estimate the CO2 emission (if large scale experiment)
 
 !! Prepare a presentation about the work for now -> demo
 

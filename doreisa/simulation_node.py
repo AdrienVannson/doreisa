@@ -24,18 +24,16 @@ class Client:
         self.rank = rank
         self.timestep = 0
 
-        self.preprocessing_callback: Callable = ray.get(self.head.get_preprocessing_callback.remote())
+        self.preprocessing_callbacks: Callable = ray.get(self.head.preprocessing_callbacks.remote())
 
-    def simulation_step(self, *chunks: np.ndarray) -> None:
-        chunks: dict[tuple[str, tuple[int, ...]], np.array] = self.preprocessing_callback(chunks, self.rank, self.timestep)
+    def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
+        chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        for chunk_info, chunk in chunks.items():
-            chunk_ref = ray.put(chunk)
+        future = self.head.add_chunk.remote(array_name, self.timestep, chunk_position, [ray.put(chunk)])
 
-            future = self.head.add_chunk.remote(chunk_info[0], self.timestep, chunk_info[1], [chunk_ref])
+        # Wait until the data is processed before returning to the simulation
+        # TODO the synchronization is not that good
+        ray.get(future)
 
-            # Wait until the data is processed before returning to the simulation
-            # TODO the synchronization is not that good
-            ray.get(future)
-
+    def next_timestep(self) -> None:
         self.timestep += 1

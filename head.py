@@ -7,24 +7,26 @@ import numpy as np
 doreisa.init()
 
 
-def preprocessing(chunks: tuple[np.array], rank: int, timestep: int) -> dict[tuple[str, tuple[int, ...]], np.array]:
-    temperatures = chunks[0]
-
-    return {
-        ("temperatures", (rank % 3, rank // 3)): temperatures[1:-1, 1:-1],
-    }
-
-
-def simulation_callback(grids: list[da.Array], step: int):
-    if step % 100 == 0:
-        print("Simulation step", step)
-        grid = grids[1]
-        plt.imsave(f"temperatures/{str(step // 100).zfill(3)}.png", grid, cmap="gray")
-
-        diff = grids[1] - grids[0]
-        plt.imsave(
-            f"derivatives/{str(step // 100).zfill(3)}.png", 5 * diff, cmap="gray"
-        )
+def preprocess_temperatures(temperatures: np.array) -> np.array:
+    """
+    Remove the ghost cells from the array.
+    """
+    return temperatures[1:-1, 1:-1]
 
 
-asyncio.run(doreisa.start(preprocessing, simulation_callback, ["temperatures"], window_size=2))
+def simulation_callback(temperatures: list[da.Array], timestep: int):
+    if timestep % 100 == 0 and timestep:
+        print("Simulation step", timestep)
+        # temp = temperatures[1]
+        temp = temperatures
+        plt.imsave(f"temperatures/{str(timestep // 100).zfill(3)}.png", temp, cmap="gray")
+
+        # diff = temperatures[1] - temperatures[0]
+        # plt.imsave(
+        #     f"derivatives/{str(timestep // 100).zfill(3)}.png", 5 * diff, cmap="gray"
+        # )
+
+
+asyncio.run(doreisa.start(simulation_callback, [
+    doreisa.DaskArray("temperatures", (3, 3), window_size=2, preprocess=preprocess_temperatures),
+]))

@@ -20,4 +20,5 @@ plugins:
       simulation_step:
         with: {temperatures: $temperatures}
         exec: |
-          client.simulation_step(temperatures)
+          client.add_chunk("temperatures", (rank % 3, rank // 3), temperatures, store_externally=False)
+          client.next_timestep()
