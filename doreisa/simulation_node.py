@@ -22,17 +22,13 @@ class Client:
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
 
         self.rank = rank
-        self.timestep = 0
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
     def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        future = self.head.add_chunk.remote(array_name, self.timestep, chunk_position, [ray.put(chunk)], chunk.shape)
+        future = self.head.add_chunk.remote(array_name, chunk_position, [ray.put(chunk)], chunk.shape)
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)
-
-    def next_timestep(self) -> None:
-        self.timestep += 1

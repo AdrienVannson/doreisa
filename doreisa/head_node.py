@@ -49,7 +49,7 @@ class _DaskArrayData:
         # Event sent each time a chunk is added
         self.chunk_added = asyncio.Event()
 
-    async def add_chunk(self, timestep: int, position: tuple[int, ...], chunk: da.Array) -> None:
+    async def add_chunk(self, position: tuple[int, ...], chunk: da.Array) -> None:
         if position in self.chunks:
             await self.array_built.wait()
             assert position not in self.chunks
@@ -114,13 +114,13 @@ class SimulationHead:
         """
         return {name: array.description.preprocess for name, array in self.arrays.items()}
 
-    async def add_chunk(self, array_name: str, timestep: int, position: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
+    async def add_chunk(self, array_name: str, position: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
         # Putting the chunk in a list prevents ray from dereferencing the object.
 
         # Convert to a dask array
         chunk: da.Array = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
 
-        await self.arrays[array_name].add_chunk(timestep, position, chunk)
+        await self.arrays[array_name].add_chunk(position, chunk)
 
     async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """
