@@ -46,8 +46,8 @@ class _DaskArrayData:
         # Event sent when a full array is built
         self.array_built = asyncio.Event()
 
-        # To wait until all the chunks for the current step are available
-        self.data_ready = asyncio.Barrier(self.nb_chunks + 1)
+        # Event sent each time a chunk is added
+        self.chunk_added = asyncio.Event()
 
     async def add_chunk(self, timestep: int, position: tuple[int, ...], chunk: da.Array) -> None:
         if position in self.chunks:
@@ -57,14 +57,16 @@ class _DaskArrayData:
         self.chunks[position] = chunk
 
         # Inform that the data is available
-        await self.data_ready.wait()
+        self.chunk_added.set()
 
     async def get_full_array(self) -> da.Array:
         """
         Return the full array for the current timestep.
         """
         # Wait until all the data for the step is available
-        await self.data_ready.wait()
+        while len(self.chunks) < self.nb_chunks:
+            await self.chunk_added.wait()
+            self.chunk_added.clear()
 
         def create_blocks(shape: tuple[int, ...], position: tuple[int, ...]=()):
             # Recursively create the blocks
@@ -79,6 +81,7 @@ class _DaskArrayData:
         # Reset the chunks for the next timestep
         self.chunks = {}
         self.array_built.set()
+        self.array_built.clear()
 
         return full_array
 
