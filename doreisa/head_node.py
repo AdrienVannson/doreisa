@@ -37,30 +37,27 @@ class _DaskArrayData:
         self.description = description
         self.nb_chunks = math.prod(description.nb_chunks_per_dim)
 
-        # chunks[t][(x, y, z, ...)] is the chunk (x, y, z, ...) of the array at time t
-        self.chunks: list[dict[tuple[int, ...], da.Array]] = []
+        # Chunks of the array being currently built
+        self.chunks: dict[tuple[int, ...], da.Array] = {}
 
+        # Moving window of the full arrays for the previous timesteps
         self.full_arrays: list[da.Array] = []
 
-        # To wait until all the data for the current step is available
+        # Event sent when a full array is built
+        self.array_built = asyncio.Event()
+
+        # To wait until all the chunks for the current step are available
         self.data_ready = asyncio.Barrier(self.nb_chunks + 1)
 
-        # Tell the MPI workers they can resume the simulation
-        self.next_simulation_step_event = asyncio.Event()
-
     async def add_chunk(self, timestep: int, position: tuple[int, ...], chunk: da.Array) -> None:
-        if len(self.chunks) <= timestep:
-            self.chunks.append({})
+        if position in self.chunks:
+            await self.array_built.wait()
+            assert position not in self.chunks
 
-        # TODO is it too strict for some simulations?
-        assert timestep == len(self.chunks) - 1
-        self.chunks[timestep][position] = chunk
+        self.chunks[position] = chunk
 
         # Inform that the data is available
         await self.data_ready.wait()
-
-        # Wait until the data is not needed anymore
-        await self.next_simulation_step_event.wait()
 
     async def get_full_array(self) -> da.Array:
         """
@@ -72,12 +69,18 @@ class _DaskArrayData:
         def create_blocks(shape: tuple[int, ...], position: tuple[int, ...]=()):
             # Recursively create the blocks
             if not shape:
-                return self.chunks[-1][position]
+                return self.chunks[position]
 
             return [create_blocks(shape[1:], position + (i,)) for i in range(shape[0])]
 
         # Return the complete grid
-        return da.block(create_blocks(self.description.nb_chunks_per_dim))
+        full_array = da.block(create_blocks(self.description.nb_chunks_per_dim))
+
+        # Reset the chunks for the next timestep
+        self.chunks = {}
+        self.array_built.set()
+
+        return full_array
 
     async def get_full_array_hist(self) -> list[da.Array]:
         """
@@ -116,13 +119,6 @@ class SimulationHead:
 
         await self.arrays[array_name].add_chunk(timestep, position, chunk)
 
-    def simulation_step_complete(self) -> None:
-        """
-        Tell all the waiting MPI workers that the data is not needed anymore.
-        """
-        for array in self.arrays.values():
-            array.next_simulation_step_event.set()
-
     async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """
         Return all the arrays for the current timestep. Should be called only once per timestep.
@@ -154,5 +150,3 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) ->
 
         simulation_callback(**all_arrays, timestep=step)
         step += 1
-
-        head.simulation_step_complete.remote()
