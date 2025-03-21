@@ -2,27 +2,27 @@
 #include <pdi.h>
 #include <cassert>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
-// Number of processors used in the simulation
-const int NB_PROCESSORS = 9;
-
-// Rank of the current processor
-int RANK;
-
-int PROCESSOR_LINE, PROCESSOR_COLUMN;
-
-// The current processor is responsible for the simulation of a LOCAL_SIZE * LOCAL_SIZE grid
-const int LOCAL_SIZE = 30;
-
 // The global grid is a PROCESSOR_GRID_SIZE*PROCESSOR_GRID_SIZE grid, each cell being simulated by a processor
 // PROCESSOR_GRID_SIZE = sqrt(NB_PROCESSORS)
-const int PROCESSOR_GRID_SIZE = 3;
+const int PROCESSOR_GRID_SIZE = 2;
+
+// Number of processors used in the simulation
+const int NB_PROCESSORS = PROCESSOR_GRID_SIZE * PROCESSOR_GRID_SIZE;
+
+// The current processor is responsible for the simulation of a LOCAL_SIZE * LOCAL_SIZE grid
+const int LOCAL_SIZE = 3000;
+
 
 const int TAG_CELL_VALUE = 0;
 
-int NB_SIMULATION_STEPS = 10000;
+const int NB_SIMULATION_STEPS = 1000;
+
+int RANK; // Rank of the current processor
+int PROCESSOR_LINE, PROCESSOR_COLUMN;
 
 // The values around the grid are received from the neighbors
 double GRID[LOCAL_SIZE+2][LOCAL_SIZE+2];
@@ -80,11 +80,6 @@ void simulationStep()
             GRID[i][j] = NEW_GRID[i][j];
         }
     }
-
-    // Heat the middle of the grid
-    if (RANK == 4) {
-        GRID[LOCAL_SIZE/2][LOCAL_SIZE/2] = 1.;
-    }
 }
 
 int main(int argc, char* argv[])
@@ -102,6 +97,16 @@ int main(int argc, char* argv[])
     PDI_init(PC_parse_path("pdi_config.yml"));
     PDI_multi_expose("init", "rank", &RANK, PDI_OUT, NULL);
 
+    // Initialize the grid
+    for (int i = 1; i <= LOCAL_SIZE; i++) {
+        for (int j = 1; j <= LOCAL_SIZE; j++) {
+            float x = (PROCESSOR_LINE + i / (float) LOCAL_SIZE) / PROCESSOR_GRID_SIZE;
+            float y = (PROCESSOR_COLUMN + j / (float) LOCAL_SIZE) / PROCESSOR_GRID_SIZE;
+
+            GRID[i][j] = sin(2 * x * 2 * M_PI) * cos(2 * y * 2 * M_PI);
+        }
+    }
+
     // Run the simulation
     for (int t = 0; t < NB_SIMULATION_STEPS; t++) {
         syncGhostCells();
@@ -109,15 +114,6 @@ int main(int argc, char* argv[])
 
         PDI_multi_expose("simulation_step", "temperatures", GRID, PDI_OUT, NULL);
     }
-
-    // Print the final mean value
-    double sum = 0.;
-    for (int i = 1; i <= LOCAL_SIZE; i++) {
-        for (int j = 1; j <= LOCAL_SIZE; j++) {
-            sum += GRID[i][j];
-        }
-    }
-    cout << "Final mean for " << RANK << ": " << sum / (LOCAL_SIZE * LOCAL_SIZE) << endl;
 
     PDI_finalize();
 

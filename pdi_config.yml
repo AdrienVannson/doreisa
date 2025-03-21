@@ -5,7 +5,7 @@ data:
   temperatures:
     type: array
     subtype: double
-    size: [32, 32]
+    size: [3002, 3002]
 
 plugins:
   # trace: ~
@@ -20,4 +20,4 @@ plugins:
       simulation_step:
         with: {temperatures: $temperatures}
         exec: |
-          client.add_chunk("temperatures", (rank // 3, rank % 3), temperatures, store_externally=False)
+          client.add_chunk("temperatures", (rank // 2, rank % 2), temperatures, store_externally=False)
