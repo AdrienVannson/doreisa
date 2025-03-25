@@ -22,7 +22,6 @@ class DaskArrayInfo:
     Description of a Dask array given by the user.
     """
     name: str
-    nb_chunks_per_dim: tuple[int, ...]
     window_size: int = 1
     preprocess: Callable = lambda x: x
 
@@ -35,7 +34,10 @@ class _DaskArrayData:
 
     def __init__(self, description: DaskArrayInfo) -> None:
         self.description = description
-        self.nb_chunks = math.prod(description.nb_chunks_per_dim)
+
+        # This will be set when the first chunk is added
+        self.nb_chunks_per_dim = None
+        self.nb_chunks = None
 
         # Chunks of the array being currently built
         self.chunks: dict[tuple[int, ...], da.Array] = {}
@@ -49,7 +51,16 @@ class _DaskArrayData:
         # Event sent each time a chunk is added
         self.chunk_added = asyncio.Event()
 
-    async def add_chunk(self, position: tuple[int, ...], chunk: da.Array) -> None:
+    async def add_chunk(self, position: tuple[int, ...], nb_chunks_per_dim: tuple[int, ...], chunk: da.Array) -> None:
+        if self.nb_chunks_per_dim is None:
+            self.nb_chunks_per_dim = nb_chunks_per_dim
+            self.nb_chunks = math.prod(nb_chunks_per_dim)
+        else:
+            assert self.nb_chunks_per_dim == nb_chunks_per_dim
+
+        for pos, nb_chunks in zip(position, nb_chunks_per_dim):
+            assert 0 <= pos < nb_chunks
+
         if position in self.chunks:
             await self.array_built.wait()
             assert position not in self.chunks
@@ -64,9 +75,11 @@ class _DaskArrayData:
         Return the full array for the current timestep.
         """
         # Wait until all the data for the step is available
-        while len(self.chunks) < self.nb_chunks:
+        while self.nb_chunks is None or len(self.chunks) < self.nb_chunks:
             await self.chunk_added.wait()
             self.chunk_added.clear()
+
+        assert self.nb_chunks_per_dim is not None
 
         def create_blocks(shape: tuple[int, ...], position: tuple[int, ...]=()):
             # Recursively create the blocks
@@ -76,7 +89,7 @@ class _DaskArrayData:
             return [create_blocks(shape[1:], position + (i,)) for i in range(shape[0])]
 
         # Return the complete grid
-        full_array = da.block(create_blocks(self.description.nb_chunks_per_dim))
+        full_array = da.block(create_blocks(self.nb_chunks_per_dim))
 
         # Reset the chunks for the next timestep
         self.chunks = {}
@@ -114,13 +127,13 @@ class SimulationHead:
         """
         return {name: array.description.preprocess for name, array in self.arrays.items()}
 
-    async def add_chunk(self, array_name: str, position: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
+    async def add_chunk(self, array_name: str, position: tuple[int, ...], nb_chunks_per_dim: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
         # Putting the chunk in a list prevents ray from dereferencing the object.
 
         # Convert to a dask array
         chunk: da.Array = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
 
-        await self.arrays[array_name].add_chunk(position, chunk)
+        await self.arrays[array_name].add_chunk(position, nb_chunks_per_dim, chunk)
 
     async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """

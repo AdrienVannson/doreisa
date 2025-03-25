@@ -25,10 +25,10 @@ class Client:
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
-    def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
+    def add_chunk(self, array_name: str, chunk_position: tuple[int, ...], nb_chunks_per_dim: tuple[int, ...], chunk: np.ndarray, store_externally: bool = False) -> None:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        future = self.head.add_chunk.remote(array_name, chunk_position, [ray.put(chunk)], chunk.shape)
+        future = self.head.add_chunk.remote(array_name, chunk_position, nb_chunks_per_dim, [ray.put(chunk)], chunk.shape)
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)
