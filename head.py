@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import doreisa.head_node as doreisa
 import dask.array as da
 import numpy as np
+import os
 
 doreisa.init()
 
@@ -19,10 +20,12 @@ def simulation_callback(temperatures: list[da.Array], timestep: int):
     if timestep % 10 == 9:
         temp1 = temperatures[1][10:-10:50, 10:-10:50]
         temp0 = temperatures[0][10:-10:50, 10:-10:50]
+        os.makedirs("temperatures", exist_ok=True)
         plt.imsave(f"temperatures/{str(timestep // 10).zfill(3)}.png", temp1, cmap="gray")
 
         diff = temp1 - temp0
         a, b = diff.min().compute(), diff.max().compute()
+        os.makedirs("derivatives", exist_ok=True)
         plt.imsave(f"derivatives/{str(timestep // 10).zfill(3)}.png", ((diff - a) / (b - a)).compute(), cmap="gray")
 
 
