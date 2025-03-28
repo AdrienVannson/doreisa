@@ -92,8 +92,8 @@ for i in range(10):
         if i + j > 12:
             continue
 
-        # # A head and 2 simulation nodes
-        # run_experiment(1 + 2, 2 ** i, 2 ** j)
+        # A head and 2 simulation nodes
+        run_experiment(1 + 2, 2 ** i, 2 ** j)
 
-        # # A head and 4 simulation nodes
-        # run_experiment(1 + 4, 2 ** i, 2 ** j)
+        # A head and 4 simulation nodes
+        run_experiment(1 + 4, 2 ** i, 2 ** j)
