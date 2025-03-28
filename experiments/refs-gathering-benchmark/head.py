@@ -19,7 +19,7 @@ class Actor:
         self.counter = 0
         self.event_ready = asyncio.Event()
 
-    async def add_chunk(self, chunk, nb_workers):
+    async def add_chunk(self, chunks, nb_workers):
         self.counter += 1
 
         if self.counter == nb_workers:
@@ -34,7 +34,7 @@ class Actor:
                 start_time = time.time()
             elif self.iteration == 250:
                 with open("experiments/refs-gathering-benchmark/measurements.txt", "a") as f:
-                    f.write(f"{nb_workers} {len(chunk)}: {time.time() - start_time}\n")
+                    f.write(f"{nb_workers} {len(chunks)}: {1000 * (time.time() - start_time) / 200}\n")
 
         else:
             await self.event_ready.wait()

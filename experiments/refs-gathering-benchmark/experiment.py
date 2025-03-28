@@ -7,7 +7,6 @@ This script must be executed from the root of the repository.
 import execo
 import execo_g5k
 import execo_engine
-import sys
 import time
 
 
@@ -86,19 +85,15 @@ def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int)
     execo_g5k.oardel(jobs)
 
 
-# Demonstrate the bottleneck
-for i in range(0, 6):
-    # A head and 2 simulation nodes
-    run_experiment(1 + 2, 24 * (2**i), 1)
+# Demonstrate the bottleneck when sending the references one by one.
+# The results should be the same with 2 and 4 simulation nodes: the head node is the bottleneck.
+for i in range(10):
+    for j in range(10):
+        if i + j > 12:
+            continue
 
-    # A head and 4 simulation nodes
-    run_experiment(1 + 4, 24 * (2**i), 1)
+        # # A head and 2 simulation nodes
+        # run_experiment(1 + 2, 2 ** i, 2 ** j)
 
-for i in range(1, 15):
-    run_experiment(1 + 2, 24, 2**i)
-
-for i in range(1, 15):
-    run_experiment(1 + 2, 4, 2**i)
-
-for i in range(1, 15):
-    run_experiment(1 + 4, 12 * 4, 2**i)
+        # # A head and 4 simulation nodes
+        # run_experiment(1 + 4, 2 ** i, 2 ** j)
