@@ -47,7 +47,7 @@ def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int)
 
     # Start the head node
     head_node_cmd = execo.SshProcess(
-        'singularity exec doreisa/docker/images/doreisa-analytics.sif bash -c "cd doreisa; ray start --head --port=4242; python3 experiments/minimal_experiment/head.py"',
+        'singularity exec doreisa/docker/images/doreisa-analytics.sif bash -c "cd doreisa; ray start --head --port=4242; python3 experiments/refs-gathering-benchmark/head.py"',
         head_node,
     )
     head_node_cmd.start()
@@ -75,7 +75,7 @@ def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int)
 
     # Run the simulation
     cmd_simulation = execo.SshProcess(
-        f"""bash -c "cd doreisa && singularity exec docker/images/doreisa-simulation.sif mpirun -n {nb_workers} --oversubscribe --hostfile hostfile singularity exec docker/images/doreisa-simulation.sif python3 experiments/minimal_experiment/worker.py {nb_chunks_sent}" """,
+        f"""bash -c "cd doreisa && singularity exec docker/images/doreisa-simulation.sif mpirun -n {nb_workers} --oversubscribe --hostfile hostfile singularity exec docker/images/doreisa-simulation.sif python3 experiments/refs-gathering-benchmark/worker.py {nb_chunks_sent}" """,
         head_node,
     )
     cmd_simulation.start()
