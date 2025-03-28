@@ -19,7 +19,7 @@ def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int)
         nb_chunks_sent: The number of chunks to send to the head node by each worker at each iteration
     """
 
-    with open("measurements.txt", "a") as f:
+    with open("experiments/refs-gathering-benchmark/measurements.txt", "a") as f:
         f.write(f"{nb_reserved_nodes} ")
 
     print("Starting experiment with", nb_reserved_nodes, nb_workers, nb_chunks_sent)

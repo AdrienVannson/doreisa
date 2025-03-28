@@ -33,7 +33,7 @@ class Actor:
                 global start_time
                 start_time = time.time()
             elif self.iteration == 250:
-                with open("measurements.txt", "a") as f:
+                with open("experiments/refs-gathering-benchmark/measurements.txt", "a") as f:
                     f.write(f"{nb_workers} {len(chunk)}: {time.time() - start_time}\n")
 
         else:
