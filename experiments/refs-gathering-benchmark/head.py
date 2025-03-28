@@ -1,15 +1,16 @@
 import os
-os.environ['RAY_worker_register_timeout_seconds'] = '3600'
+
+os.environ["RAY_worker_register_timeout_seconds"] = "3600"
 
 import asyncio
 import time
 import ray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
-import numpy as np
 
 ray.init()
 
 start_time = None
+
 
 @ray.remote
 class Actor:
@@ -38,10 +39,10 @@ class Actor:
         else:
             await self.event_ready.wait()
 
+
 head = Actor.options(
     name="simulation_head",
     namespace="doreisa",
-
     # Schedule the actor on this node
     scheduling_strategy=NodeAffinitySchedulingStrategy(
         node_id=ray.get_runtime_context().get_node_id(),

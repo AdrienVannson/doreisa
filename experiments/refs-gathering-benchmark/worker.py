@@ -1,5 +1,6 @@
 import os
-os.environ['RAY_worker_register_timeout_seconds'] = '3600'
+
+os.environ["RAY_worker_register_timeout_seconds"] = "3600"
 
 import numpy as np
 import ray
