@@ -27,6 +27,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.9.7"
 poethepoet = "^0.32.2"
+pytest = "^8.3.5"
 
 [tool.ruff]
 line-length = 120
