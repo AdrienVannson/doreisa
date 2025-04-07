@@ -17,9 +17,6 @@ def head() -> None:
         if x != 10 * timestep:
             exit(1)
 
-        with open("test.txt", "a") as f:
-            f.write(f"timestep {timestep}: {x}\n")
-
         if timestep == NB_ITERATIONS - 1:
             exit(0)
 
