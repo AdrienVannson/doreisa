@@ -32,7 +32,7 @@ def worker(rank: int) -> None:
 
     client = Client(rank)
 
-    array = np.array(rank + 1, dtype=np.int32)
+    array = np.array([[rank + 1]], dtype=np.int32)
 
     for i in range(NB_ITERATIONS):
         client.add_chunk("array", (rank // 2, rank % 2), (2, 2), i * array, store_externally=False)
@@ -53,5 +53,5 @@ def test_doreisa(ray_cluster) -> None:  # noqa: F811
         worker_process.start()
         worker_processes.append(worker_process)
 
-    head_process.join()
+    head_process.join(timeout=10)
     assert head_process.exitcode == 0
