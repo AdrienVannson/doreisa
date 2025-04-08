@@ -9,6 +9,8 @@ import math
 from typing import Callable
 from dataclasses import dataclass
 from typing import Any
+from dask.highlevelgraph import HighLevelGraph
+import numpy as np
 
 
 def init():
@@ -21,6 +23,7 @@ class DaskArrayInfo:
     """
     Description of a Dask array given by the user.
     """
+
     name: str
     window_size: int = 1
     preprocess: Callable = lambda x: x
@@ -36,11 +39,14 @@ class _DaskArrayData:
         self.description = description
 
         # This will be set when the first chunk is added
-        self.nb_chunks_per_dim = None
-        self.nb_chunks = None
+        self.nb_chunks_per_dim: tuple[int, ...] | None = None
+        self.nb_chunks: int | None = None
+
+        # For each dimension, the size of the chunks in this dimension
+        self.chunks_size: list[list[int | None]] | None = None
 
         # Chunks of the array being currently built
-        self.chunks: dict[tuple[int, ...], da.Array] = {}
+        self.chunks: dict[tuple[int, ...], ray.ObjectRef] = {}
 
         # Moving window of the full arrays for the previous timesteps
         self.full_arrays: list[da.Array] = []
@@ -51,12 +57,21 @@ class _DaskArrayData:
         # Event sent each time a chunk is added
         self.chunk_added = asyncio.Event()
 
-    async def add_chunk(self, position: tuple[int, ...], nb_chunks_per_dim: tuple[int, ...], chunk: da.Array) -> None:
+    async def add_chunk(
+        self,
+        chunk: ray.ObjectRef,
+        chunk_size: tuple[int, ...],
+        position: tuple[int, ...],
+        nb_chunks_per_dim: tuple[int, ...],
+    ) -> None:
         if self.nb_chunks_per_dim is None:
             self.nb_chunks_per_dim = nb_chunks_per_dim
             self.nb_chunks = math.prod(nb_chunks_per_dim)
+
+            self.chunks_size = [[None for _ in range(n)] for n in nb_chunks_per_dim]
         else:
             assert self.nb_chunks_per_dim == nb_chunks_per_dim
+            assert self.chunks_size is not None
 
         for pos, nb_chunks in zip(position, nb_chunks_per_dim):
             assert 0 <= pos < nb_chunks
@@ -66,6 +81,12 @@ class _DaskArrayData:
             assert position not in self.chunks
 
         self.chunks[position] = chunk
+
+        for d in range(len(position)):
+            if self.chunks_size[d][position[d]] is None:
+                self.chunks_size[d][position[d]] = chunk_size[d]
+            else:
+                assert self.chunks_size[d][position[d]] == chunk_size[d]
 
         # Inform that the data is available
         self.chunk_added.set()
@@ -81,15 +102,15 @@ class _DaskArrayData:
 
         assert self.nb_chunks_per_dim is not None
 
-        def create_blocks(shape: tuple[int, ...], position: tuple[int, ...]=()):
-            # Recursively create the blocks
-            if not shape:
-                return self.chunks[position]
+        graph = {(self.description.name,) + position: chunk for position, chunk in self.chunks.items()}
+        dsk = HighLevelGraph.from_collections(self.description.name, graph, dependencies=())
 
-            return [create_blocks(shape[1:], position + (i,)) for i in range(shape[0])]
-
-        # Return the complete grid
-        full_array = da.block(create_blocks(self.nb_chunks_per_dim))
+        full_array = da.Array(
+            dsk,
+            self.description.name,
+            chunks=self.chunks_size,
+            dtype=np.float64,
+        )
 
         # Reset the chunks for the next timestep
         self.chunks = {}
@@ -127,13 +148,20 @@ class SimulationHead:
         """
         return {name: array.description.preprocess for name, array in self.arrays.items()}
 
-    async def add_chunk(self, array_name: str, position: tuple[int, ...], nb_chunks_per_dim: tuple[int, ...], chunk_ray: list[ray.ObjectRef], chunk_size: tuple[int, ...]) -> None:
+    async def add_chunk(
+        self,
+        array_name: str,
+        position: tuple[int, ...],
+        nb_chunks_per_dim: tuple[int, ...],
+        chunk_ray: list[ray.ObjectRef],
+        chunk_size: tuple[int, ...],
+    ) -> None:
         # Putting the chunk in a list prevents ray from dereferencing the object.
 
         # Convert to a dask array
-        chunk: da.Array = da.from_delayed(ray_to_dask(chunk_ray[0]), chunk_size, dtype=float)
+        chunk_ref = chunk_ray[0]
 
-        await self.arrays[array_name].add_chunk(position, nb_chunks_per_dim, chunk)
+        await self.arrays[array_name].add_chunk(chunk_ref, chunk_size, position, nb_chunks_per_dim)
 
     async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """
