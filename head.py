@@ -29,6 +29,11 @@ def simulation_callback(temperatures: list[da.Array], timestep: int):
         plt.imsave(f"derivatives/{str(timestep // 10).zfill(3)}.png", ((diff - a) / (b - a)).compute(), cmap="gray")
 
 
-asyncio.run(doreisa.start(simulation_callback, [
-    doreisa.DaskArrayInfo("temperatures", window_size=2, preprocess=preprocess_temperatures),
-]))
+asyncio.run(
+    doreisa.start(
+        simulation_callback,
+        [
+            doreisa.DaskArrayInfo("temperatures", window_size=2, preprocess=preprocess_temperatures),
+        ],
+    )
+)

@@ -3,6 +3,7 @@ from tests.utils import ray_cluster  # noqa: F401
 
 NB_ITERATIONS = 10
 
+
 def head() -> None:
     """The head node checks that the values are correct"""
     import asyncio
@@ -20,9 +21,14 @@ def head() -> None:
         if timestep == NB_ITERATIONS - 1:
             exit(0)
 
-    asyncio.run(doreisa.start(simulation_callback, [
-        doreisa.DaskArrayInfo("array", window_size=1),
-    ]))
+    asyncio.run(
+        doreisa.start(
+            simulation_callback,
+            [
+                doreisa.DaskArrayInfo("array", window_size=1),
+            ],
+        )
+    )
 
 
 def worker(rank: int) -> None:
@@ -46,7 +52,7 @@ def test_doreisa(ray_cluster) -> None:  # noqa: F811
     head_process.start()
 
     time.sleep(5)
-    
+
     worker_processes = []
     for rank in range(4):
         worker_process = mp.Process(target=worker, args=(rank,), daemon=True)
