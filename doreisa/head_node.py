@@ -1,5 +1,4 @@
 import asyncio
-import dask.array
 import ray
 import ray.util.dask
 import dask
@@ -44,6 +43,9 @@ class _DaskArrayData:
 
         # For each dimension, the size of the chunks in this dimension
         self.chunks_size: list[list[int | None]] | None = None
+
+        # Timestep of the array currently being built
+        self.timestep: int = 0
 
         # Chunks of the array being currently built
         self.chunks: dict[tuple[int, ...], ray.ObjectRef] = {}
@@ -102,12 +104,16 @@ class _DaskArrayData:
 
         assert self.nb_chunks_per_dim is not None
 
-        graph = {(self.description.name,) + position: chunk for position, chunk in self.chunks.items()}
-        dsk = HighLevelGraph.from_collections(self.description.name, graph, dependencies=())
+        # We need to add the timestep since the same name can be used several times for different
+        # timesteps
+        name = f"{self.description.name}_{self.timestep}"
+
+        graph = {(name,) + position: chunk for position, chunk in self.chunks.items()}
+        dsk = HighLevelGraph.from_collections(name, graph, dependencies=())
 
         full_array = da.Array(
             dsk,
-            self.description.name,
+            name,
             chunks=self.chunks_size,
             dtype=np.float64,
         )
@@ -116,6 +122,7 @@ class _DaskArrayData:
         self.chunks = {}
         self.array_built.set()
         self.array_built.clear()
+        self.timestep += 1
 
         return full_array
 
