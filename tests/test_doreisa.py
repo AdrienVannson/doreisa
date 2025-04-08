@@ -1,4 +1,4 @@
-from tests.utils import ray_cluster  # noqa: F401
+from tests.utils import ray_cluster, simple_worker  # noqa: F401
 
 
 NB_ITERATIONS = 10
@@ -31,19 +31,6 @@ def head() -> None:
     )
 
 
-def worker(rank: int) -> None:
-    """Worker nodes send chunks of data"""
-    from doreisa.simulation_node import Client
-    import numpy as np
-
-    client = Client(rank)
-
-    array = np.array([[rank + 1]], dtype=np.int32)
-
-    for i in range(NB_ITERATIONS):
-        client.add_chunk("array", (rank // 2, rank % 2), (2, 2), i * array, store_externally=False)
-
-
 def test_doreisa(ray_cluster) -> None:  # noqa: F811
     import multiprocessing as mp
     import time
@@ -55,7 +42,9 @@ def test_doreisa(ray_cluster) -> None:  # noqa: F811
 
     worker_processes = []
     for rank in range(4):
-        worker_process = mp.Process(target=worker, args=(rank,), daemon=True)
+        worker_process = mp.Process(
+            target=simple_worker, args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS), daemon=True
+        )
         worker_process.start()
         worker_processes.append(worker_process)
 
