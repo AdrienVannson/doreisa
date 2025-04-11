@@ -17,7 +17,7 @@ def simulation_callback(arrays: list[da.Array], timestep: int):
     arr = arrays[0]
 
     dsk = arr.mean()
-    mean = dsk.compute()
+    dsk.compute()
 
     if timestep == 20:
         global start_time
@@ -26,7 +26,7 @@ def simulation_callback(arrays: list[da.Array], timestep: int):
     if timestep == 120:
         end_time = time.time()
 
-        with open("logs.txt", "a") as f:
+        with open("results.txt", "a") as f:
             f.write(f"{np.prod(arr.numblocks)} {1000 * (end_time - start_time) / 100}\n")
 
 asyncio.run(doreisa.start(simulation_callback, [
