@@ -187,6 +187,8 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) ->
             node_id=ray.get_runtime_context().get_node_id(),
             soft=False,
         ),
+        # Prevents the actor from being stuck when it needs to gather many refs
+        max_concurrency=1000_000_000,
     ).remote(arrays_description)
 
     print("Waiting to start the simulation...")
