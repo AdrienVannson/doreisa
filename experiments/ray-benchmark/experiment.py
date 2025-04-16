@@ -6,7 +6,7 @@ import time
 JOB_ID, SITE = ..., ...
 
 
-def run_experiment(nb_reserved_nodes: int, nb_actors: int, nb_iterations: int) -> None:
+def run_experiment(nb_actors: int, nb_iterations: int) -> None:
     # Get useful stats
     nodes = execo_g5k.get_oar_job_nodes(JOB_ID, SITE, timeout=None)
     head_node, nodes = nodes[0], nodes[1:]
@@ -49,4 +49,4 @@ def run_experiment(nb_reserved_nodes: int, nb_actors: int, nb_iterations: int) -
 
 for nb_actors in [1, 2, 4, 8, 16]:
     for nb_iterations in [1024, 2048, 4096, 8192, 16384, 32768, 65536]:
-        run_experiment(10, nb_actors, nb_iterations)
+        run_experiment(nb_actors, nb_iterations)
