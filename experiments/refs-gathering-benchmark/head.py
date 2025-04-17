@@ -7,7 +7,7 @@ import time
 import ray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
-ray.init()
+ray.init(address="auto")
 
 start_time = None
 
@@ -34,7 +34,7 @@ class Actor:
                 start_time = time.time()
             elif self.iteration == 250:
                 with open("experiments/refs-gathering-benchmark/measurements.txt", "a") as f:
-                    f.write(f"{nb_workers} {len(chunks)}: {1000 * (time.time() - start_time) / 200}\n")
+                    f.write(f"{len(ray.nodes())} {nb_workers} {len(chunks)}: {1000 * (time.time() - start_time) / 200}\n")
 
         else:
             await self.event_ready.wait()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 data = {}
 
-with open("measurements.txt", "r") as f:
+with open("results-nancy-gros.txt", "r") as f:
     for line in f:
         line = line.strip()
 
@@ -17,13 +17,13 @@ with open("measurements.txt", "r") as f:
         data[nb_machines].append((nb_processes, nb_refs_per_process, time))
 
 # Compute the relative difference between the two experiments
-max_diff = 0
+# max_diff = 0
 
-for (p1, r1, t1), (p2, r2, t2) in zip(data[3], data[5]):
-    assert p1 == p2 and r1 == r2
-    max_diff = max(max_diff, abs(t1 - t2) / t1)
+# for (p1, r1, t1), (p2, r2, t2) in zip(data[3], data[5]):
+#     assert p1 == p2 and r1 == r2
+#     max_diff = max(max_diff, abs(t1 - t2) / t1)
 
-print(f"Max diff: {max_diff:.2%}")
+# print(f"Max diff: {max_diff:.2%}")
 
 for a, values in data.items():
     ps = sorted(set(p for p, r, t in values))

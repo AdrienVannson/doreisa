@@ -6,13 +6,11 @@ import numpy as np
 import ray
 import sys
 
-rank = int(os.environ["OMPI_COMM_WORLD_RANK"])
-total = int(os.environ["OMPI_COMM_WORLD_SIZE"])
+rank = int(sys.argv[1])
+total = int(sys.argv[2])
+nb_chunks_sent = int(sys.argv[3])
 
-ray.init()
-
-
-nb_chunks_sent = int(sys.argv[1])
+ray.init(address="auto")
 
 head = ray.get_actor("simulation_head", namespace="doreisa")
 
