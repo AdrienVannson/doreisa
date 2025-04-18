@@ -34,11 +34,11 @@ for a, values in data.items():
     for p, r, t in values:
         i = rs.index(r)
         j = ps.index(p)
-        grid[i, j] = (t / (p * r))
+        grid[i, j] = t / (p * r)
 
     fig, ax = plt.subplots()
 
-    ax.imshow(grid, aspect='auto', origin='lower', norm=colors.LogNorm())
+    ax.imshow(grid, aspect="auto", origin="lower", norm=colors.LogNorm())
 
     cbar = ax.figure.colorbar(ax.images[0], ax=ax)
     cbar.set_label("Time per iteration per reference (ms)")
@@ -51,6 +51,6 @@ for a, values in data.items():
     plt.savefig(f"heatmap_{a}.png")
 
     for (i, j), val in np.ndenumerate(grid):
-        ax.text(j, i, f'{val:.2f}', ha='center', va='center', color='white')
+        ax.text(j, i, f"{val:.2f}", ha="center", va="center", color="white")
 
     plt.savefig(f"heatmap_{a}_annotated.png")

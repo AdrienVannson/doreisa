@@ -28,6 +28,7 @@ build-backend = "poetry.core.masonry.api"
 ruff = "^0.9.7"
 poethepoet = "^0.32.2"
 pytest = "^8.3.5"
+pre-commit = "^4.2.0"
 
 [tool.ruff]
 line-length = 120
@@ -35,4 +36,5 @@ exclude = ["build", "dist", ".venv"]
 
 [tool.poe.tasks]
 format = "ruff format"
+check = "ruff check"
 typecheck = "pyright doreisa head.py"

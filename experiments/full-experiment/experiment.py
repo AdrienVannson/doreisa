@@ -1,6 +1,5 @@
 import execo
 import execo_g5k
-import execo_engine
 import time
 import threading
 
@@ -101,17 +100,12 @@ def run_experiment(nb_reserved_nodes: int, head_file: str) -> None:
     # Release the ressources
     execo_g5k.oardel(jobs)
 
+
 threads = []
 
 for i in range(5, 7):
-    t1 = threading.Thread(
-        target=run_experiment,
-        args=(2**i + 1, "head-small.py")
-    )
-    t2 = threading.Thread(
-        target=run_experiment,
-        args=(2**i + 1, "head.py")
-    )
+    t1 = threading.Thread(target=run_experiment, args=(2**i + 1, "head-small.py"))
+    t2 = threading.Thread(target=run_experiment, args=(2**i + 1, "head.py"))
     threads.extend([t1, t2])
     t1.start()
     t2.start()

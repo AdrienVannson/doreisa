@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 import asyncio
@@ -26,6 +27,12 @@ def simulation_callback(arrays: list[da.Array], timestep: int):
         with open("results.txt", "a") as f:
             f.write(f"{np.prod(arr.numblocks)} {1000 * (end_time - start_time) / 100}\n")
 
-asyncio.run(doreisa.start(simulation_callback, [
-    doreisa.DaskArrayInfo("arrays", window_size=1),
-]))
+
+asyncio.run(
+    doreisa.start(
+        simulation_callback,
+        [
+            doreisa.DaskArrayInfo("arrays", window_size=1),
+        ],
+    )
+)

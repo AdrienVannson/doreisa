@@ -1,0 +1,11 @@
+ci:
+  autofix_prs: false
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: ruff-format
+        args: ["--diff", "doreisa", "tests"]
+      - id: ruff
+        args: ["doreisa", "tests"]

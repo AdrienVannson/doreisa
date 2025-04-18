@@ -16,10 +16,10 @@ def head() -> None:
         if timestep == 0:
             assert len(array) == 1
             return
-        
+
         assert array[0].sum().compute() == 10 * (timestep - 1)
         assert array[1].sum().compute() == 10 * timestep
-        
+
         # Test a computation where the two arrays are used at the same time.
         # This checks that they are defined with different names.
         assert (array[1] - array[0]).sum().compute() == 10

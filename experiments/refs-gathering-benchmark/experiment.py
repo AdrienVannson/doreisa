@@ -6,7 +6,6 @@ This script must be executed from the root of the repository.
 
 import execo
 import execo_g5k
-import execo_engine
 import time
 import threading
 
@@ -78,6 +77,7 @@ def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int)
     # Release the ressources
     execo_g5k.oardel(jobs)
 
+
 threads = []
 
 # Demonstrate the bottleneck when sending the references one by one.
@@ -88,10 +88,7 @@ for i in range(10):
             continue
 
         # A head and 4 simulation nodes
-        threads.append(threading.Thread(
-            target=run_experiment,
-            args=(1 + 4, 2 ** i, 2 ** j)
-        ))
+        threads.append(threading.Thread(target=run_experiment, args=(1 + 4, 2**i, 2**j)))
         threads[-1].start()
 
 for t in threads:

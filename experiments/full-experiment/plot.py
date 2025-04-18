@@ -46,8 +46,8 @@ ax2.set_xticks(xs)
 
 ratio = [y1 / y2 * 100 for y1, y2 in zip(ys1, ys2)]
 
-ax2.fill_between(xs, ratio, 100, alpha=0.4, facecolor='orange', label="Scheduling the tasks")
-ax2.fill_between(xs, 0, ratio, alpha=0.4, facecolor='red', label="Building the array")
+ax2.fill_between(xs, ratio, 100, alpha=0.4, facecolor="orange", label="Scheduling the tasks")
+ax2.fill_between(xs, 0, ratio, alpha=0.4, facecolor="red", label="Building the array")
 ax2.legend(loc="upper right")
 
 ax2.plot(xs, ratio)
