@@ -2,6 +2,7 @@ import asyncio
 import pytest
 import multiprocessing as mp
 import time
+import ray
 import dask.array as da
 
 from tests.utils import ray_cluster, simple_worker  # noqa: F401
@@ -37,8 +38,6 @@ def head() -> None:
 
 def check_scheduling_actors(nb_actors: int) -> None:
     """Check that the right number of scheduling actors were created"""
-    import ray
-
     ray.init(address="auto")
 
     simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
