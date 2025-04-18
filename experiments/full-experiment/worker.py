@@ -3,6 +3,7 @@ import os
 os.environ["RAY_worker_register_timeout_seconds"] = "3600"
 
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 from doreisa.simulation_node import Client

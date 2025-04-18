@@ -16,22 +16,28 @@ ray.init()
 
 assert len(ray.nodes()) == 10
 
+
 @ray.remote
 def create_big_array():
     return ray.put(np.random.random((1000, 1000)))
+
 
 @ray.remote
 def identity(x):
     return x
 
+
 refs = []
 for node in ray.nodes():
-    refs.append(create_big_array.options(
-        scheduling_strategy=NodeAffinitySchedulingStrategy(
-            node_id=node["NodeID"],
-            soft=False,
-        ),
-    ).remote())
+    refs.append(
+        create_big_array.options(
+            scheduling_strategy=NodeAffinitySchedulingStrategy(
+                node_id=node["NodeID"],
+                soft=False,
+            ),
+        ).remote()
+    )
+
 
 @ray.remote
 class SchedulingActor:
@@ -46,12 +52,16 @@ class SchedulingActor:
 
         ray.get(futures)
 
-scheduling_actors = [SchedulingActor.options(
-    scheduling_strategy=NodeAffinitySchedulingStrategy(
-        node_id=ray.get_runtime_context().get_node_id(),
-        soft=False,
-    )
-).remote(refs) for _ in range(NB_ACTORS)]
+
+scheduling_actors = [
+    SchedulingActor.options(
+        scheduling_strategy=NodeAffinitySchedulingStrategy(
+            node_id=ray.get_runtime_context().get_node_id(),
+            soft=False,
+        )
+    ).remote(refs)
+    for _ in range(NB_ACTORS)
+]
 
 begin = time.time()
 ray.get([a.start_tasks.remote() for a in scheduling_actors])

@@ -1,6 +1,5 @@
 import execo
 import execo_g5k
-import execo_engine
 import time
 
 JOB_ID, SITE = ..., ...
@@ -46,6 +45,7 @@ def run_experiment(nb_actors: int, nb_iterations: int) -> None:
         node_cmd.start()
 
     head_node_cmd.wait()
+
 
 for nb_actors in [1, 2, 4, 8, 16]:
     for nb_iterations in [1024, 2048, 4096, 8192, 16384, 32768, 65536]:
