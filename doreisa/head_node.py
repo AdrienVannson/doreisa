@@ -1,5 +1,6 @@
 import asyncio
 import ray
+import ray.actor
 import ray.util.dask
 import dask
 import dask.array as da
@@ -10,6 +11,9 @@ from dataclasses import dataclass
 from typing import Any
 from dask.highlevelgraph import HighLevelGraph
 import numpy as np
+
+
+from doreisa._scheduling_actor import SchedulingActor
 
 
 def init():
@@ -144,10 +148,28 @@ def ray_to_dask(x):
 @ray.remote
 class SimulationHead:
     def __init__(self, arrays_description: list[DaskArrayInfo]) -> None:
+        # For each ID of a simulation node, the corresponding scheduling actor
+        self.scheduling_nodes: dict[str, ray.actor.ActorHandle] = {}
+
         # For each name, the corresponding array
         self.arrays: dict[str, _DaskArrayData] = {
             description.name: _DaskArrayData(description) for description in arrays_description
         }
+
+    def scheduling_actor(self, node_id: str) -> ray.actor.ActorHandle:
+        """
+        Return the scheduling actor for the given node ID.
+        """
+        if node_id not in self.scheduling_nodes:
+            self.scheduling_nodes[node_id] = SchedulingActor.options(  # type: ignore
+                # Schedule the actor on this node
+                scheduling_strategy=NodeAffinitySchedulingStrategy(
+                    node_id=node_id,
+                    soft=False,
+                ),
+            ).remote()
+
+        return self.scheduling_nodes[node_id]
 
     def preprocessing_callbacks(self) -> dict[str, Callable]:
         """

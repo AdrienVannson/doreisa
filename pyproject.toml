@@ -35,6 +35,7 @@ line-length = 120
 exclude = ["build", "dist", ".venv"]
 
 [tool.poe.tasks]
+test = "pytest ."
 format = "ruff format"
 check = "ruff check"
 typecheck = "pyright doreisa head.py"

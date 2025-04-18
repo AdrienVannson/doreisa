@@ -23,7 +23,7 @@ def simple_worker(
     from doreisa.simulation_node import Client
     import numpy as np
 
-    client = Client(rank)
+    client = Client()
 
     array = (rank + 1) * np.ones(chunk_size, dtype=np.int32)
 

@@ -1,13 +1,8 @@
 import numpy as np
 import ray
-from dataclasses import dataclass
 from typing import Callable
 
-
-@dataclass
-class _Chunk:
-    array_name: str
-    chunk_position: tuple[int, ...]
+import ray.actor
 
 
 class Client:
@@ -18,10 +13,14 @@ class Client:
     array.
     """
 
-    def __init__(self, rank: int) -> None:
-        self.head = ray.get_actor("simulation_head", namespace="doreisa")
+    def __init__(self) -> None:
+        if not ray.is_initialized():
+            ray.init(address="auto")
 
-        self.rank = rank
+        self.node_id = ray.get_runtime_context().get_node_id()
+
+        self.head = ray.get_actor("simulation_head", namespace="doreisa")
+        self.scheduling_actor: ray.actor.ActorHandle = ray.get(self.head.scheduling_actor.remote(self.node_id))
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
@@ -35,9 +34,10 @@ class Client:
     ) -> None:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        future = self.head.add_chunk.remote(
-            array_name, chunk_position, nb_chunks_per_dim, [ray.put(chunk)], chunk.shape
-        )
+        # TODO add a test to check that _owner allows the script to terminate without loosing the ref
+        ref = ray.put(chunk, _owner=self.scheduling_actor)
+
+        future = self.head.add_chunk.remote(array_name, chunk_position, nb_chunks_per_dim, [ref], chunk.shape)
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)
