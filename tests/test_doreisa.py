@@ -4,8 +4,6 @@ import multiprocessing as mp
 import time
 import dask.array as da
 
-import ray
-import ray.util.state
 from tests.utils import ray_cluster, simple_worker  # noqa: F401
 
 
@@ -36,6 +34,17 @@ def head() -> None:
         )
     )
 
+
+def check_scheduling_actors(nb_actors: int) -> None:
+    """Check that the right number of scheduling actors were created"""
+    import ray
+
+    ray.init(address="auto")
+
+    simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
+    assert ray.get(simulation_head.nb_scheduling_actors.remote()) == nb_actors
+
+
 @pytest.mark.parametrize("nb_nodes", [1, 2, 4])
 def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
     head_process = mp.Process(target=head, daemon=True)
@@ -57,9 +66,10 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
     time.sleep(2)
 
     # Check that the right number of scheduling actors were created
-    # ray.init(address="auto")
-    # simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
-    # assert ray.get(simulation_head.nb_scheduling_actors.remote()) == nb_nodes
+    check_process = mp.Process(target=check_scheduling_actors, args=(nb_nodes,))
+    check_process.start()
+    check_process.join(timeout=10)
+    assert check_process.exitcode == 0
 
     head_process.join(timeout=10)
     assert head_process.exitcode == 0

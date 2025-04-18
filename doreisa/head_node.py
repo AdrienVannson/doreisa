@@ -162,7 +162,7 @@ class SimulationHead:
         """
         return len(self.scheduling_actors)
 
-    def scheduling_actor(self, node_id: str, *, is_fake_id: bool = False) -> ray.actor.ActorHandle:
+    async def scheduling_actor(self, node_id: str, *, is_fake_id: bool = False) -> ray.actor.ActorHandle:
         """
         Return the scheduling actor for the given node ID.
 
@@ -183,7 +183,7 @@ class SimulationHead:
                     ),
                 ).remote()
 
-            ray.get(self.scheduling_actors[node_id].ready.remote())  # type: ignore
+            await self.scheduling_actors[node_id].ready.remote()  # type: ignore
 
         return self.scheduling_actors[node_id]
 

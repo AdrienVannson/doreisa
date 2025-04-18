@@ -25,7 +25,9 @@ class Client:
         self.node_id = _node_id or ray.get_runtime_context().get_node_id()
 
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
-        self.scheduling_actor: ray.actor.ActorHandle = ray.get(self.head.scheduling_actor.remote(self.node_id, is_fake_id=bool(_node_id)))
+        self.scheduling_actor: ray.actor.ActorHandle = ray.get(
+            self.head.scheduling_actor.remote(self.node_id, is_fake_id=bool(_node_id))
+        )
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
