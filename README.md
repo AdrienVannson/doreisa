@@ -35,13 +35,6 @@ ray start --head --port=4242 --include-dashboard=True
 
 python3 head.py
 
-Build Docker:
-podman build --pull --rm -f 'docker/simulation/Dockerfile' -t 'doreisa-simulation:latest' 'docker/simulation'
-
-docker build --pull --rm -f 'Dockerfile' -t 'doreisa:latest' '.'
-docker save doreisa:latest -o doreisa-image.tar
-singularity build ./doreisa.sif docker-archive://doreisa-image.tar
-singularity build ./doreisa.sif docker-archive://doreisa-image.tar
 mpirun -n 3 singularity exec ./doreisa.sif hostname
 
 If needed: singularity shell
@@ -88,4 +81,25 @@ Doreisa
 
 
 mpirun -machinefile $OAR_NODEFILE singularity exec ./doreisa.sif hostname
-mpirun -machinefile $OAR_NODEFILE singularity exec ./doreisa.sif 
+mpirun -machinefile $OAR_NODEFILE singularity exec ./doreisa.sif
+
+
+
+ZMQ to make remote copies of numpy array
+
+
+
+present windw approach as research
+
+Simulation : eulerian vs lagrangian vs semi-lagrangian
+
+Understand the ray scheduling strategy
+
+Same for dask on ray
+
+1. Scalability benchmark (!)
+2. In-situ / in-transfer API
+3. Feedback loop (for the simulation and analytics)
+4. Dask on Ray
+5. Scheduling: Dask, Ray, Dask-on-Ray -> understand better (!)
+6. Slicing, avoid full object moves (ex: convolutions)
