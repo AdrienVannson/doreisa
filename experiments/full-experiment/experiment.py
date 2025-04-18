@@ -1,9 +1,3 @@
-"""
-Run an experiment to dertermine the maximum number of references that a single node can process.
-
-This script must be executed from the root of the repository.
-"""
-
 import execo
 import execo_g5k
 import execo_engine
