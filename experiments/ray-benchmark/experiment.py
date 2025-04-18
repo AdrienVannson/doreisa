@@ -17,7 +17,7 @@ def run_experiment(nb_actors: int, nb_iterations: int) -> None:
     stops = []
     for node in nodes + [head_node]:
         stop_ray = execo.SshProcess(
-            f"""singularity exec doreisa/docker/images/doreisa-simulation.sif bash -c "ray stop" """,
+            """singularity exec doreisa/docker/images/doreisa-simulation.sif bash -c "ray stop" """,
             node,
         )
         stop_ray.start()
