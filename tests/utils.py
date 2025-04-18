@@ -1,3 +1,4 @@
+import ray
 import pytest
 import subprocess
 
@@ -9,6 +10,9 @@ def ray_cluster():
 
     yield
 
+    if ray.is_initialized():
+        ray.shutdown()
+
     subprocess.run(["ray", "stop"], check=True)
 
 
@@ -18,12 +22,14 @@ def simple_worker(
     chunks_per_dim: tuple[int, ...],
     chunk_size: tuple[int, ...],
     nb_iterations: int,
+    *,
+    node_id: str | None = None,
 ) -> None:
     """Worker node sending chunks of data"""
     from doreisa.simulation_node import Client
     import numpy as np
 
-    client = Client()
+    client = Client(_node_id=node_id)
 
     array = (rank + 1) * np.ones(chunk_size, dtype=np.int32)
 

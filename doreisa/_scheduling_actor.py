@@ -9,3 +9,6 @@ class SchedulingActor:
 
     def __init__(self) -> None:
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
+
+    def ready(self) -> None:
+        pass

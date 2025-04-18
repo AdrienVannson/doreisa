@@ -13,14 +13,19 @@ class Client:
     array.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, _node_id: str | None = None) -> None:
+        """
+        Args:
+            _node_id: The ID of the node. If None, the ID is taken from the Ray runtime context.
+                This is useful for testing with several scheduling actors on a single machine.
+        """
         if not ray.is_initialized():
             ray.init(address="auto")
 
-        self.node_id = ray.get_runtime_context().get_node_id()
+        self.node_id = _node_id or ray.get_runtime_context().get_node_id()
 
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
-        self.scheduling_actor: ray.actor.ActorHandle = ray.get(self.head.scheduling_actor.remote(self.node_id))
+        self.scheduling_actor: ray.actor.ActorHandle = ray.get(self.head.scheduling_actor.remote(self.node_id, is_fake_id=bool(_node_id)))
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 

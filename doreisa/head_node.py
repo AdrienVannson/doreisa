@@ -149,27 +149,43 @@ def ray_to_dask(x):
 class SimulationHead:
     def __init__(self, arrays_description: list[DaskArrayInfo]) -> None:
         # For each ID of a simulation node, the corresponding scheduling actor
-        self.scheduling_nodes: dict[str, ray.actor.ActorHandle] = {}
+        self.scheduling_actors: dict[str, ray.actor.ActorHandle] = {}
 
         # For each name, the corresponding array
         self.arrays: dict[str, _DaskArrayData] = {
             description.name: _DaskArrayData(description) for description in arrays_description
         }
 
-    def scheduling_actor(self, node_id: str) -> ray.actor.ActorHandle:
+    def nb_scheduling_actors(self) -> int:
+        """
+        Return the number of scheduling actors.
+        """
+        return len(self.scheduling_actors)
+
+    def scheduling_actor(self, node_id: str, *, is_fake_id: bool = False) -> ray.actor.ActorHandle:
         """
         Return the scheduling actor for the given node ID.
-        """
-        if node_id not in self.scheduling_nodes:
-            self.scheduling_nodes[node_id] = SchedulingActor.options(  # type: ignore
-                # Schedule the actor on this node
-                scheduling_strategy=NodeAffinitySchedulingStrategy(
-                    node_id=node_id,
-                    soft=False,
-                ),
-            ).remote()
 
-        return self.scheduling_nodes[node_id]
+        Args:
+            node_id: The ID of the node.
+            is_fake_id: If True, the ID isn't a Ray node ID, and the actor can be scheduled
+                anywhere. This is useful for testing purposes.
+        """
+        if node_id not in self.scheduling_actors:
+            if is_fake_id:
+                self.scheduling_actors[node_id] = SchedulingActor.remote()  # type: ignore
+            else:
+                self.scheduling_actors[node_id] = SchedulingActor.options(  # type: ignore
+                    # Schedule the actor on this node
+                    scheduling_strategy=NodeAffinitySchedulingStrategy(
+                        node_id=node_id,
+                        soft=False,
+                    ),
+                ).remote()
+
+            ray.get(self.scheduling_actors[node_id].ready.remote())  # type: ignore
+
+        return self.scheduling_actors[node_id]
 
     def preprocessing_callbacks(self) -> dict[str, Callable]:
         """
