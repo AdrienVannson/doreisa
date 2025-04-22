@@ -215,7 +215,7 @@ class SimulationHead:
         return {name: await array.get_full_array_hist() for name, array in self.arrays.items()}
 
 
-async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) -> None:
+async def start(simulation_callback, arrays_description: list[DaskArrayInfo], *, max_iterations=1000_000_000) -> None:
     # The workers will be able to access to this actor using its name
     head: Any = SimulationHead.options(
         name="simulation_head",
@@ -227,17 +227,16 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) ->
         ),
         # Prevents the actor from being stuck when it needs to gather many refs
         max_concurrency=1000_000_000,
+        # Prevents the actor from being deleted when the function ends
+        lifetime="detached",
     ).remote(arrays_description)
 
     print("Waiting to start the simulation...")
 
-    step = 0
-
-    while True:
+    for step in range(max_iterations):
         all_arrays: dict[str, da.Array] = ray.get(head.get_all_arrays.remote())
 
         if step == 0:
             print("Simulation started!")
 
         simulation_callback(**all_arrays, timestep=step)
-        step += 1

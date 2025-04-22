@@ -1,30 +1,25 @@
 import asyncio
 import pytest
-import multiprocessing as mp
-import time
 import ray
+from ray.util.dask import enable_dask_on_ray
 import dask.array as da
-
-from tests.utils import ray_cluster, simple_worker  # noqa: F401
+from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 
 NB_ITERATIONS = 10
 
 
-def head() -> None:
+@ray.remote
+def head_script() -> None:
     """The head node checks that the values are correct"""
     import doreisa.head_node as doreisa
 
-    doreisa.init()
+    enable_dask_on_ray()
 
     def simulation_callback(array: list[da.Array], timestep: int):
         x = array[0].sum().compute()
 
-        if x != 10 * timestep:
-            exit(1)
-
-        if timestep == NB_ITERATIONS - 1:
-            exit(0)
+        assert x == 10 * timestep
 
     asyncio.run(
         doreisa.start(
@@ -32,6 +27,7 @@ def head() -> None:
             [
                 doreisa.DaskArrayInfo("array", window_size=1),
             ],
+            max_iterations=NB_ITERATIONS,
         )
     )
 
@@ -46,34 +42,20 @@ def check_scheduling_actors(nb_actors: int) -> None:
 
 @pytest.mark.parametrize("nb_nodes", [1, 2, 4])
 def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
-    head_process = mp.Process(target=head)
-    head_process.start()
+    head_ref = head_script.remote()
+    wait_for_head_node()
 
-    time.sleep(5)
-
-    worker_processes = []
+    worker_refs = []
     for rank in range(4):
-        worker_process = mp.Process(
-            target=simple_worker,
-            args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS),
-            kwargs={"node_id": f"node_{rank % nb_nodes}"},
+        worker_refs.append(
+            simple_worker.remote(
+                rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS, node_id=f"node_{rank % nb_nodes}"
+            )
         )
-        worker_process.start()
-        worker_processes.append(worker_process)
 
-    time.sleep(2)
+    ray.get(worker_refs)
+    ray.get(head_ref)
 
     # Check that the right number of scheduling actors were created
-    check_process = mp.Process(target=check_scheduling_actors, args=(nb_nodes,))
-    check_process.start()
-    check_process.join(timeout=10)
-    assert check_process.exitcode == 0
-
-    head_process.join(timeout=10)
-    assert head_process.exitcode == 0
-
-    # Terminate all processes
-    check_process.kill()
-    head_process.kill()
-    for worker_process in worker_processes:
-        worker_process.kill()
+    simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
+    assert ray.get(simulation_head.nb_scheduling_actors.remote()) == nb_nodes
