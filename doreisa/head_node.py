@@ -1,17 +1,16 @@
 import asyncio
+import math
+from dataclasses import dataclass
+from typing import Any, Callable
+
+import dask
+import dask.array as da
+import numpy as np
 import ray
 import ray.actor
 import ray.util.dask
-import dask
-import dask.array as da
-from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
-import math
-from typing import Callable
-from dataclasses import dataclass
-from typing import Any
 from dask.highlevelgraph import HighLevelGraph
-import numpy as np
-
+from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
 from doreisa._scheduling_actor import SchedulingActor
 

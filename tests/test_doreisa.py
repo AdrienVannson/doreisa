@@ -1,10 +1,11 @@
 import asyncio
+
+import dask.array as da
 import pytest
 import ray
 from ray.util.dask import enable_dask_on_ray
-import dask.array as da
-from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
+from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 NB_ITERATIONS = 10
 

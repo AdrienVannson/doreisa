@@ -1,7 +1,7 @@
-import numpy as np
-import ray
 from typing import Callable
 
+import numpy as np
+import ray
 import ray.actor
 
 

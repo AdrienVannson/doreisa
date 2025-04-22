@@ -1,11 +1,11 @@
-import ray
-
-from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 import asyncio
-import doreisa.head_node as doreisa
+
 import dask.array as da
+import ray
 from ray.util.dask import enable_dask_on_ray
 
+import doreisa.head_node as doreisa
+from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 NB_ITERATIONS = 10
 

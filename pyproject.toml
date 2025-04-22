@@ -36,6 +36,11 @@ exclude = ["build", "dist", ".venv"]
 
 [tool.poe.tasks]
 test = "pytest ."
-format = "ruff format"
 check = "ruff check"
 typecheck = "pyright doreisa head.py"
+_format = "ruff format"
+_sort-imports = "ruff check --select I --fix"
+
+[tool.poe.tasks.format]
+sequence = ["_format", "_sort-imports"]
+help = "Format the source code, and sort the imports"

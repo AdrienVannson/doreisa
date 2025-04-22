@@ -6,10 +6,12 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from doreisa.simulation_node import Client
-import numpy as np
 import sys
 import time
+
+import numpy as np
+
+from doreisa.simulation_node import Client
 
 rank, total = int(sys.argv[1]), int(sys.argv[2])
 

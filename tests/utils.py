@@ -1,6 +1,7 @@
-import ray
-import pytest
 import time
+
+import pytest
+import ray
 
 
 @pytest.fixture
@@ -34,8 +35,9 @@ def simple_worker(
     node_id: str | None = None,
 ) -> None:
     """Worker node sending chunks of data"""
-    from doreisa.simulation_node import Client
     import numpy as np
+
+    from doreisa.simulation_node import Client
 
     client = Client(_fake_node_id=node_id)
 

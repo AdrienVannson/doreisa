@@ -1,7 +1,8 @@
+import threading
+import time
+
 import execo
 import execo_g5k
-import time
-import threading
 
 
 def run_experiment(nb_reserved_nodes: int, head_file: str) -> None:
