@@ -46,7 +46,7 @@ def check_scheduling_actors(nb_actors: int) -> None:
 
 @pytest.mark.parametrize("nb_nodes", [1, 2, 4])
 def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
-    head_process = mp.Process(target=head, daemon=True)
+    head_process = mp.Process(target=head)
     head_process.start()
 
     time.sleep(5)
@@ -57,7 +57,6 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
             target=simple_worker,
             args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS),
             kwargs={"node_id": f"node_{rank % nb_nodes}"},
-            daemon=True,
         )
         worker_process.start()
         worker_processes.append(worker_process)
@@ -72,3 +71,9 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
 
     head_process.join(timeout=10)
     assert head_process.exitcode == 0
+
+    # Terminate all processes
+    check_process.kill()
+    head_process.kill()
+    for worker_process in worker_processes:
+        worker_process.kill()

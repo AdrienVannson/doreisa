@@ -41,7 +41,7 @@ def test_sliding_window(ray_cluster) -> None:  # noqa: F811
     import multiprocessing as mp
     import time
 
-    head_process = mp.Process(target=head, daemon=True)
+    head_process = mp.Process(target=head)
     head_process.start()
 
     time.sleep(5)
@@ -49,7 +49,7 @@ def test_sliding_window(ray_cluster) -> None:  # noqa: F811
     worker_processes = []
     for rank in range(4):
         worker_process = mp.Process(
-            target=simple_worker, args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS), daemon=True
+            target=simple_worker, args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS)
         )
         worker_process.start()
         worker_processes.append(worker_process)
