@@ -157,11 +157,11 @@ class SimulationHead:
             description.name: _DaskArrayData(description) for description in arrays_description
         }
 
-    def nb_scheduling_actors(self) -> int:
+    def list_scheduling_actors(self) -> list[ray.actor.ActorHandle]:
         """
-        Return the number of scheduling actors.
+        Return the list of scheduling actors.
         """
-        return len(self.scheduling_actors)
+        return list(self.scheduling_actors.values())
 
     async def scheduling_actor(self, node_id: str, *, is_fake_id: bool = False) -> ray.actor.ActorHandle:
         """

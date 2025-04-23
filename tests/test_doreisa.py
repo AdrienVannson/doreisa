@@ -37,7 +37,7 @@ def check_scheduling_actors(nb_actors: int) -> None:
     ray.init(address="auto")
 
     simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
-    assert ray.get(simulation_head.nb_scheduling_actors.remote()) == nb_actors
+    assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_actors
 
 
 @pytest.mark.parametrize("nb_nodes", [1, 2, 4])
@@ -58,4 +58,4 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
 
     # Check that the right number of scheduling actors were created
     simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
-    assert ray.get(simulation_head.nb_scheduling_actors.remote()) == nb_nodes
+    assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_nodes
