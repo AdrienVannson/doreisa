@@ -8,16 +8,18 @@ import dask.array as da
 import numpy as np
 import ray
 import ray.actor
-import ray.util.dask
 from dask.highlevelgraph import HighLevelGraph
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
+from doreisa._scheduler import doreisa_get
 from doreisa._scheduling_actor import SchedulingActor
 
 
 def init():
-    ray.init()
-    ray.util.dask.enable_dask_on_ray()
+    if not ray.is_initialized():
+        ray.init(address="auto")
+
+    dask.config.set(scheduler=doreisa_get, shuffle="tasks")
 
 
 @dataclass

@@ -3,7 +3,6 @@ import asyncio
 import dask.array as da
 import pytest
 import ray
-from ray.util.dask import enable_dask_on_ray
 
 from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
@@ -15,7 +14,7 @@ def head_script() -> None:
     """The head node checks that the values are correct"""
     import doreisa.head_node as doreisa
 
-    enable_dask_on_ray()
+    doreisa.init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
         x = array[0].sum().compute()
