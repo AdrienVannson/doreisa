@@ -1,6 +1,5 @@
 import ray
 from dask.core import get_dependencies
-from ray.util.dask import ray_dask_get
 
 
 def doreisa_get(dsk: dict, keys, **kwargs):
@@ -11,7 +10,7 @@ def doreisa_get(dsk: dict, keys, **kwargs):
     key = keys[0][0]
 
     # Find the scheduling actors
-    scheduling_actors = head_node.list_scheduling_actors.remote()
+    scheduling_actors = ray.get(head_node.list_scheduling_actors.remote())
 
     # Find a not too bad scheduling strategy
     # Good scheduling in a tree
@@ -50,4 +49,10 @@ def doreisa_get(dsk: dict, keys, **kwargs):
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
 
-    return ray_dask_get(dsk, keys, **kwargs)
+    res = ray.get(
+        [scheduling_actors[i].schedule_graph.remote(dsk_ref, 0, scheduling_ref) for i in range(len(scheduling_actors))]
+    )
+
+    res = [[ray.get(scheduling_actors[scheduling[key]].get_value.remote(0, key))]]
+
+    return res

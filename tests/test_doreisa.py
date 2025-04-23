@@ -24,9 +24,7 @@ def head_script() -> None:
     asyncio.run(
         doreisa.start(
             simulation_callback,
-            [
-                doreisa.DaskArrayInfo("array", window_size=1),
-            ],
+            [doreisa.DaskArrayInfo("array", window_size=1)],
             max_iterations=NB_ITERATIONS,
         )
     )
