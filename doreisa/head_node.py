@@ -172,9 +172,11 @@ class SimulationHead:
             is_fake_id: If True, the ID isn't a Ray node ID, and the actor can be scheduled
                 anywhere. This is useful for testing purposes.
         """
+        actor_id = len(self.scheduling_actors)
+
         if node_id not in self.scheduling_actors:
             if is_fake_id:
-                self.scheduling_actors[node_id] = SchedulingActor.remote()  # type: ignore
+                self.scheduling_actors[node_id] = SchedulingActor.remote(actor_id)  # type: ignore
             else:
                 self.scheduling_actors[node_id] = SchedulingActor.options(  # type: ignore
                     # Schedule the actor on this node
@@ -182,7 +184,7 @@ class SimulationHead:
                         node_id=node_id,
                         soft=False,
                     ),
-                ).remote()
+                ).remote(actor_id)
 
             await self.scheduling_actors[node_id].ready.remote()  # type: ignore
 
