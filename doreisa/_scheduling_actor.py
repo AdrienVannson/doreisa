@@ -27,8 +27,8 @@ def task_ready(actor, graph_id: int, key, value):
 
 
 @ray.remote
-def remote_ray_dask_get(dsk, keys):
-    return ray_dask_get(dsk, keys)
+def remote_ray_dask_get(dsk):
+    return ray_dask_get(dsk, [])
 
 
 @ray.remote
@@ -90,7 +90,7 @@ class SchedulingActor:
 
         dsk.update(data_ready_tasks)
 
-        await remote_ray_dask_get.remote(dsk, [])
+        await remote_ray_dask_get.remote(dsk)
 
     def set_task_ready(self, graph_id: int, key: str, ref: list[ray.ObjectRef]):
         self.graph_infos[graph_id].refs[key] = ref[0]
