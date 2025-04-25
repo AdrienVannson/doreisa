@@ -49,7 +49,7 @@ def doreisa_get(dsk: dict, keys, **kwargs):
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
 
-    res = ray.get(
+    ray.get(
         [scheduling_actors[i].schedule_graph.remote(dsk_ref, 0, scheduling_ref) for i in range(len(scheduling_actors))]
     )
 
