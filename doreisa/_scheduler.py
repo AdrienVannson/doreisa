@@ -25,28 +25,28 @@ def doreisa_get(dsk: dict, keys, **kwargs):
         for dep in get_dependencies(dsk, key):
             explore(dep, v)
 
-    scheduling[key] = 0
-    c = 0
-    for dep1 in get_dependencies(dsk, key):
-        scheduling[dep1] = 0
+    # scheduling[key] = 0
+    # c = 0
+    # for dep1 in get_dependencies(dsk, key):
+    #     scheduling[dep1] = 0
 
-        for dep2 in get_dependencies(dsk, dep1):
-            scheduling[dep2] = 0
+    #     for dep2 in get_dependencies(dsk, dep1):
+    #         scheduling[dep2] = 0
 
-            for dep3 in get_dependencies(dsk, dep2):
-                scheduling[dep3] = 0
+    #         for dep3 in get_dependencies(dsk, dep2):
+    #             scheduling[dep3] = 0
 
-                for dep4 in get_dependencies(dsk, dep3):
-                    scheduling[dep4] = 0
+    #             for dep4 in get_dependencies(dsk, dep3):
+    #                 scheduling[dep4] = 0
 
-                    for dep5 in get_dependencies(dsk, dep4):
-                        explore(dep5, c % len(scheduling_actors))
-                        c += 1
+    #                 for dep5 in get_dependencies(dsk, dep4):
+    #                     explore(dep5, c % len(scheduling_actors))
+    #                     c += 1
 
-    assert -1 not in scheduling.values()
+    # assert -1 not in scheduling.values()
 
     # scheduling = {k: randint(0, len(scheduling_actors) - 1) for k in dsk.keys()}
-    # scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
+    scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
 
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
