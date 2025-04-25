@@ -28,7 +28,7 @@ def task_ready(actor, graph_id: int, key, value):
 
 @ray.remote
 def remote_ray_dask_get(dsk):
-    return ray_dask_get(dsk, [])
+    ray_dask_get(dsk, [])
 
 
 @ray.remote
