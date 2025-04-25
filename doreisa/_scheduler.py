@@ -1,3 +1,5 @@
+import random
+
 import ray
 from dask.core import get_dependencies
 
@@ -49,10 +51,15 @@ def doreisa_get(dsk: dict, keys, **kwargs):
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
 
+    graph_id = random.randint(0, 2**64 - 1)
+
     ray.get(
-        [scheduling_actors[i].schedule_graph.remote(dsk_ref, 0, scheduling_ref) for i in range(len(scheduling_actors))]
+        [
+            scheduling_actors[i].schedule_graph.remote(dsk_ref, graph_id, scheduling_ref)
+            for i in range(len(scheduling_actors))
+        ]
     )
 
-    res = [[ray.get(scheduling_actors[scheduling[key]].get_value.remote(0, key))]]
+    res = [[ray.get(scheduling_actors[scheduling[key]].get_value.remote(graph_id, key))]]
 
     return res
