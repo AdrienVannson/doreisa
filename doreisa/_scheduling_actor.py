@@ -3,7 +3,6 @@ import asyncio
 import ray
 import ray.actor
 from dask.core import get_dependencies
-from ray.util.dask import ray_dask_get
 
 
 class GraphInfo:
@@ -16,19 +15,47 @@ class GraphInfo:
         self.refs: dict[str, ray.ObjectRef] = {}
 
 
-def task_ready(actor, graph_id: int, key, value):
-    """
-    Task executed when the data is ready.
-    """
-    assert key[0] == "key"
-    key = key[1]
-
-    actor.set_task_ready.remote(graph_id, key, [value])
-
-
 @ray.remote
-def remote_ray_dask_get(dsk):
-    ray_dask_get(dsk, [])
+def remote_ray_dask_get(dsk, keys):
+    import ray.util.dask
+    import ray.util.dask.scheduler
+
+    @ray.remote
+    def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=True):
+        """
+        Patched version of the original dask_task_wrapper function.
+
+        This version received ObjectRefs first, and calls itself a second time to unwrap the ObjectRefs.
+        The result is an ObjectRef.
+
+        TODO can probably be rewritten without copying the whole function
+        """
+
+        if first_call:
+            assert all([isinstance(a, ray.ObjectRef) for a in args])
+            return patched_dask_task_wrapper.remote(
+                func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=False
+            )
+
+        if ray_pretask_cbs is not None:
+            pre_states = [cb(key, args) if cb is not None else None for cb in ray_pretask_cbs]
+        repacked_args, repacked_deps = repack(args)
+        # Recursively execute Dask-inlined tasks.
+        actual_args = [ray.util.dask.scheduler._execute_task(a, repacked_deps) for a in repacked_args]
+        # Execute the actual underlying Dask task.
+        result = func(*actual_args)
+
+        if ray_posttask_cbs is not None:
+            for cb, pre_state in zip(ray_posttask_cbs, pre_states):
+                if cb is not None:
+                    cb(key, result, pre_state)
+
+        return result
+
+    # Monkey-patch Dask-on-Ray
+    ray.util.dask.scheduler.dask_task_wrapper = patched_dask_task_wrapper
+
+    return ray.util.dask.ray_dask_get(dsk, keys, ray_persist=True)
 
 
 @ray.remote
@@ -76,25 +103,13 @@ class SchedulingActor:
         # Prepare key events
         for k in local_keys - dependency_keys:  # TODO doesn't always work
             info.key_ready_events[k] = asyncio.Event()
+        keys_with_events = list(local_keys - dependency_keys)
 
-        # Add tasks executed when data is ready
-        data_ready_tasks = {}
-        for k in local_keys - dependency_keys:  # TODO same
-            data_ready_tasks[("dask_on_ray_ready", k)] = (
-                task_ready,
-                self.scheduling_actors[self.actor_id],
-                graph_id,
-                ("key", k),
-                k,
-            )
+        refs = await remote_ray_dask_get.remote(dsk, keys_with_events)
 
-        dsk.update(data_ready_tasks)
-
-        await remote_ray_dask_get.remote(dsk)
-
-    def set_task_ready(self, graph_id: int, key: str, ref: list[ray.ObjectRef]):
-        self.graph_infos[graph_id].refs[key] = ref[0]
-        self.graph_infos[graph_id].key_ready_events[key].set()
+        for key, ref in zip(keys_with_events, refs):
+            info.refs[key] = ref
+            info.key_ready_events[key].set()
 
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:
@@ -103,7 +118,7 @@ class SchedulingActor:
         assert key in self.graph_infos[graph_id].key_ready_events
 
         await self.graph_infos[graph_id].key_ready_events[key].wait()
-        return self.graph_infos[graph_id].refs[key]
+        return await self.graph_infos[graph_id].refs[key]
 
     # TODO
     # async def terminate_graph(self, graph_id: int):

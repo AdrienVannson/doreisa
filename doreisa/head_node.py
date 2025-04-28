@@ -209,7 +209,15 @@ class SimulationHead:
         # Convert to a dask array
         chunk_ref = chunk_ray[0]
 
-        await self.arrays[array_name].add_chunk(chunk_ref, chunk_size, position, nb_chunks_per_dim)
+        @ray.remote
+        def pack_object_ref(refs: list[ray.ObjectRef]):
+            # This function is used to create an ObjectRef containing the given ObjectRef.
+            # This allows having the expected format in the task graph.
+            return refs[0]
+
+        await self.arrays[array_name].add_chunk(
+            pack_object_ref.remote([chunk_ref]), chunk_size, position, nb_chunks_per_dim
+        )
 
     async def get_all_arrays(self) -> dict[str, list[da.Array]]:
         """

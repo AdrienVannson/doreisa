@@ -60,6 +60,6 @@ def doreisa_get(dsk: dict, keys, **kwargs):
         ]
     )
 
-    res = [[ray.get(scheduling_actors[scheduling[key]].get_value.remote(graph_id, key))]]
+    res = scheduling_actors[scheduling[key]].get_value.remote(graph_id, key)
 
-    return res
+    return [[ray.get(ray.get(res))]]
