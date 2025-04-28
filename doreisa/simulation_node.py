@@ -42,7 +42,8 @@ class Client:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
         # TODO add a test to check that _owner allows the script to terminate without loosing the ref
-        ref = ray.put(chunk, _owner=self.scheduling_actor)
+        # ref = ray.put(chunk, _owner=self.scheduling_actor)
+        ref = ray.put(chunk)
 
         future = self.head.add_chunk.remote(array_name, chunk_position, nb_chunks_per_dim, [ref], chunk.shape)
 
