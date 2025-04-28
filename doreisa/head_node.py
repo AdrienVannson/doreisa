@@ -1,20 +1,25 @@
 import asyncio
-import ray
-import ray.util.dask
+import math
+from dataclasses import dataclass
+from typing import Any, Callable
+
 import dask
 import dask.array as da
-from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
-import math
-from typing import Callable
-from dataclasses import dataclass
-from typing import Any
-from dask.highlevelgraph import HighLevelGraph
 import numpy as np
+import ray
+import ray.actor
+from dask.highlevelgraph import HighLevelGraph
+from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
+
+from doreisa._scheduler import doreisa_get
+from doreisa._scheduling_actor import SchedulingActor
 
 
 def init():
-    ray.init()
-    ray.util.dask.enable_dask_on_ray()
+    if not ray.is_initialized():
+        ray.init(address="auto")
+
+    dask.config.set(scheduler=doreisa_get, shuffle="tasks")
 
 
 @dataclass
@@ -144,10 +149,48 @@ def ray_to_dask(x):
 @ray.remote
 class SimulationHead:
     def __init__(self, arrays_description: list[DaskArrayInfo]) -> None:
+        # For each ID of a simulation node, the corresponding scheduling actor
+        self.scheduling_actors: dict[str, ray.actor.ActorHandle] = {}
+
         # For each name, the corresponding array
         self.arrays: dict[str, _DaskArrayData] = {
             description.name: _DaskArrayData(description) for description in arrays_description
         }
+
+    def list_scheduling_actors(self) -> list[ray.actor.ActorHandle]:
+        """
+        Return the list of scheduling actors.
+        """
+        return list(self.scheduling_actors.values())
+
+    async def scheduling_actor(self, node_id: str, *, is_fake_id: bool = False) -> ray.actor.ActorHandle:
+        """
+        Return the scheduling actor for the given node ID.
+
+        Args:
+            node_id: The ID of the node.
+            is_fake_id: If True, the ID isn't a Ray node ID, and the actor can be scheduled
+                anywhere. This is useful for testing purposes.
+        """
+        actor_id = len(self.scheduling_actors)
+
+        if node_id not in self.scheduling_actors:
+            if is_fake_id:
+                self.scheduling_actors[node_id] = SchedulingActor.remote(actor_id)  # type: ignore
+            else:
+                self.scheduling_actors[node_id] = SchedulingActor.options(  # type: ignore
+                    # Schedule the actor on this node
+                    scheduling_strategy=NodeAffinitySchedulingStrategy(
+                        node_id=node_id,
+                        soft=False,
+                    ),
+                    # Prevents the actor from being stuck
+                    max_concurrency=1000_000_000,
+                ).remote(actor_id)
+
+            await self.scheduling_actors[node_id].ready.remote()  # type: ignore
+
+        return self.scheduling_actors[node_id]
 
     def preprocessing_callbacks(self) -> dict[str, Callable]:
         """
@@ -177,7 +220,7 @@ class SimulationHead:
         return {name: await array.get_full_array_hist() for name, array in self.arrays.items()}
 
 
-async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) -> None:
+async def start(simulation_callback, arrays_description: list[DaskArrayInfo], *, max_iterations=1000_000_000) -> None:
     # The workers will be able to access to this actor using its name
     head: Any = SimulationHead.options(
         name="simulation_head",
@@ -189,17 +232,16 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo]) ->
         ),
         # Prevents the actor from being stuck when it needs to gather many refs
         max_concurrency=1000_000_000,
+        # Prevents the actor from being deleted when the function ends
+        lifetime="detached",
     ).remote(arrays_description)
 
     print("Waiting to start the simulation...")
 
-    step = 0
-
-    while True:
+    for step in range(max_iterations):
         all_arrays: dict[str, da.Array] = ray.get(head.get_all_arrays.remote())
 
         if step == 0:
             print("Simulation started!")
 
         simulation_callback(**all_arrays, timestep=step)
-        step += 1

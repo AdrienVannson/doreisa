@@ -1,10 +1,10 @@
-import time
 import random
 import sys
+import time
 
+import numpy as np
 import ray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
-import numpy as np
 
 NB_ACTORS = int(sys.argv[1])
 NB_ITERATIONS = int(sys.argv[2])
