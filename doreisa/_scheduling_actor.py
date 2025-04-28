@@ -11,7 +11,7 @@ class GraphInfo:
     """
 
     def __init__(self):
-        self.key_ready_events: dict[str, asyncio.Event] = {}
+        self.scheduled_event = asyncio.Event()
         self.refs: dict[str, ray.ObjectRef] = {}
 
 
@@ -101,23 +101,20 @@ class SchedulingActor:
             dsk[k] = actor.get_value.remote(graph_id, k)
 
         # Prepare key events
-        for k in local_keys - dependency_keys:  # TODO doesn't always work
-            info.key_ready_events[k] = asyncio.Event()
         keys_with_events = list(local_keys - dependency_keys)
 
         refs = await remote_ray_dask_get.remote(dsk, keys_with_events)
 
         for key, ref in zip(keys_with_events, refs):
             info.refs[key] = ref
-            info.key_ready_events[key].set()
+
+        info.scheduled_event.set()
 
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:
             await self.new_graph_available.wait()
 
-        assert key in self.graph_infos[graph_id].key_ready_events
-
-        await self.graph_infos[graph_id].key_ready_events[key].wait()
+        await self.graph_infos[graph_id].scheduled_event.wait()
         return await self.graph_infos[graph_id].refs[key]
 
     # TODO
