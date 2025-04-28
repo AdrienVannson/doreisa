@@ -184,6 +184,8 @@ class SimulationHead:
                         node_id=node_id,
                         soft=False,
                     ),
+                    # Prevents the actor from being stuck
+                    max_concurrency=1000_000_000,
                 ).remote(actor_id)
 
             await self.scheduling_actors[node_id].ready.remote()  # type: ignore
