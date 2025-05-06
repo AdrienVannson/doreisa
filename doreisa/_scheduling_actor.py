@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 
 import ray
 import ray.actor
@@ -13,6 +14,17 @@ class GraphInfo:
     def __init__(self):
         self.scheduled_event = asyncio.Event()
         self.refs: dict[str, ray.ObjectRef] = {}
+
+
+@dataclass
+class ChunkReadyInfo:
+    # Information about the array
+    array_name: str
+    nb_chunks_per_dim: tuple[int, ...]
+
+    # Information about the chunk
+    position: tuple[int, ...]
+    size: tuple[int, ...]
 
 
 @ray.remote
@@ -66,15 +78,65 @@ class SchedulingActor:
 
     def __init__(self, actor_id: int) -> None:
         self.actor_id = actor_id
-
-        self.new_graph_available = asyncio.Event()
-        self.graph_infos: dict[int, GraphInfo] = {}
-
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
         self.scheduling_actors: list[ray.actor.ActorHandle] = []
 
+        # For collecting chunks
+
+        # Triggered when all the chunks are ready
+        self.chunks_ready_event = asyncio.Event()
+
+        self.chunks_info: dict[str, list[ChunkReadyInfo]] = {}
+
+        # (array_name, position) -> chunk
+        self.local_chunks: dict[tuple[str, tuple[int, ...]], ray.ObjectRef] = {}
+
+        # TODO delete, doesn't work with windows
+        self.array_used = asyncio.Event()
+
+        # For scheduling
+        self.new_graph_available = asyncio.Event()
+        self.graph_infos: dict[int, GraphInfo] = {}
+
     def ready(self) -> None:
         pass
+
+    async def add_chunk(
+        self,
+        array_name: str,
+        chunk_position: tuple[int, ...],
+        nb_chunks_per_dim: tuple[int, ...],
+        nb_chunks_of_node: int,
+        chunk: list[ray.ObjectRef],
+        chunk_shape: tuple[int, ...],
+    ) -> None:
+        # TODO change this small hack
+        if (array_name, chunk_position) in self.local_chunks:
+            await self.array_used.wait()
+            assert (array_name, chunk_position) not in self.local_chunks
+
+        self.local_chunks[(array_name, chunk_position)] = chunk[0]
+
+        if array_name not in self.chunks_info:
+            self.chunks_info[array_name] = []
+        chunks_info = self.chunks_info[array_name]
+
+        chunks_info.append(
+            ChunkReadyInfo(
+                array_name=array_name,
+                nb_chunks_per_dim=nb_chunks_per_dim,
+                position=chunk_position,
+                size=chunk_shape,
+            )
+        )
+
+        if len(chunks_info) == nb_chunks_of_node:
+            await self.head.chunks_ready.remote(chunks_info, self.actor_id)
+            self.chunks_info[array_name] = []
+            self.chunks_ready_event.set()
+            self.chunks_ready_event.clear()
+        else:
+            await self.chunks_ready_event.wait()
 
     async def schedule_graph(self, dsk: dict, graph_id: int, scheduling: dict[str, int]):
         # Find the scheduling actors
@@ -100,15 +162,32 @@ class SchedulingActor:
             actor = self.scheduling_actors[scheduling[k]]
             dsk[k] = actor.get_value.remote(graph_id, k)
 
-        # Prepare key events
-        keys_with_events = list(local_keys - dependency_keys)
+        # Replace the false chunks by the real ObjectRefs
+        for key, val in dsk.items():
+            match val:
+                case ("doreisa_chunk", actor_id):
+                    assert actor_id == self.actor_id
 
-        refs = await remote_ray_dask_get.remote(dsk, keys_with_events)
+                    array_name = "_".join(key[0].split("_")[:-1])
+                    assert isinstance(array_name, str)
 
-        for key, ref in zip(keys_with_events, refs):
+                    dsk[key] = self.local_chunks[(array_name, key[1:])]
+                case _:
+                    pass
+
+        # We will need the ObjectRefs of these keys
+        keys_needed = list(local_keys - dependency_keys)
+
+        refs = await remote_ray_dask_get.remote(dsk, keys_needed)
+
+        for key, ref in zip(keys_needed, refs):
             info.refs[key] = ref
 
         info.scheduled_event.set()
+
+        self.local_chunks = {}
+        self.array_used.set()
+        self.array_used.clear()
 
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:

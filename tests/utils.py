@@ -8,6 +8,7 @@ import ray
 def ray_cluster():
     """Start a Ray cluster for this test"""
     ray.init(num_cpus=100)
+    # ray.init(address="auto")
 
     yield
 
@@ -29,6 +30,7 @@ def simple_worker(
     rank: int,
     position: tuple[int, ...],
     chunks_per_dim: tuple[int, ...],
+    nb_chunks_of_node: int,
     chunk_size: tuple[int, ...],
     nb_iterations: int,
     *,
@@ -44,4 +46,4 @@ def simple_worker(
     array = (rank + 1) * np.ones(chunk_size, dtype=np.int32)
 
     for i in range(nb_iterations):
-        client.add_chunk("array", position, chunks_per_dim, i * array, store_externally=False)
+        client.add_chunk("array", position, chunks_per_dim, nb_chunks_of_node, i * array, store_externally=False)

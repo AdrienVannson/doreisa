@@ -43,9 +43,22 @@ class Client:
         array_name: str,
         chunk_position: tuple[int, ...],
         nb_chunks_per_dim: tuple[int, ...],
+        nb_chunks_of_node: int,
         chunk: np.ndarray,
         store_externally: bool = False,
     ) -> None:
+        """
+        Make a chunk of data available to the analytic.
+
+        Args:
+            array_name: The name of the array.
+            chunk_position: The position of the chunk in the array.
+            nb_chunks_per_dim: The number of chunks per dimension.
+            nb_chunks_of_node: The number of chunks sent by this node. The scheduling actor will
+                inform the head actor when all the chunks are ready.
+            chunk: The chunk of data.
+            store_externally: If True, the data is stored externally. TODO Not implemented yet.
+        """
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
         # TODO add a test to check that _owner allows the script to terminate without loosing the ref
@@ -53,7 +66,14 @@ class Client:
         ref = ray.put(chunk)
         ref = _pack_object_ref.remote([ref])
 
-        future = self.head.add_chunk.remote(array_name, chunk_position, nb_chunks_per_dim, [ref], chunk.shape)
+        future: ray.ObjectRef = self.scheduling_actor.add_chunk.remote(
+            array_name,
+            chunk_position,
+            nb_chunks_per_dim,
+            nb_chunks_of_node,
+            [ref],
+            chunk.shape,
+        )  # type: ignore
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)

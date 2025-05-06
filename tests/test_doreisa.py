@@ -17,7 +17,7 @@ def head_script() -> None:
     doreisa.init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
-        x = array[0].sum().compute()
+        x = array[0].sum().compute(optimize_graph=False)
 
         assert x == 10 * timestep
 
@@ -39,7 +39,13 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
     for rank in range(4):
         worker_refs.append(
             simple_worker.remote(
-                rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS, node_id=f"node_{rank % nb_nodes}"
+                rank,
+                (rank // 2, rank % 2),
+                (2, 2),
+                4 // nb_nodes,
+                (1, 1),
+                NB_ITERATIONS,
+                node_id=f"node_{rank % nb_nodes}",
             )
         )
 

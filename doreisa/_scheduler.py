@@ -4,7 +4,10 @@ import ray
 from dask.core import get_dependencies
 
 
-def doreisa_get(dsk: dict, keys, **kwargs):
+def doreisa_get(dsk, keys, **kwargs):
+    # The graph may be a HighLevelGraph
+    dsk = dict(dsk)
+
     head_node = ray.get_actor("simulation_head", namespace="doreisa")  # noqa: F841
 
     assert isinstance(keys, list) and len(keys) == 1
@@ -47,6 +50,14 @@ def doreisa_get(dsk: dict, keys, **kwargs):
 
     # scheduling = {k: randint(0, len(scheduling_actors) - 1) for k in dsk.keys()}
     scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
+
+    # Make sure the leafs are scheduled on the right actor
+    for key, val in dsk.items():
+        match val:
+            case ("doreisa_chunk", actor_id):
+                scheduling[key] = actor_id
+            case _:
+                pass
 
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
