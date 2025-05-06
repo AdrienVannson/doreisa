@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 
 import ray
 from dask.core import get_dependencies
@@ -21,12 +22,12 @@ def doreisa_get(dsk, keys, **kwargs):
     # Good scheduling in a tree
     scheduling = {k: -1 for k in dsk.keys()}
 
-    def explore(key, v: int):
-        # Only works for trees for now
-        assert scheduling[key] == -1
-        scheduling[key] = v
-        for dep in get_dependencies(dsk, key):
-            explore(dep, v)
+    # def explore(key, v: int):
+    #     # Only works for trees for now
+    #     assert scheduling[key] == -1
+    #     scheduling[key] = v
+    #     for dep in get_dependencies(dsk, key):
+    #         explore(dep, v)
 
     # scheduling[key] = 0
     # c = 0
@@ -49,15 +50,29 @@ def doreisa_get(dsk, keys, **kwargs):
     # assert -1 not in scheduling.values()
 
     # scheduling = {k: randint(0, len(scheduling_actors) - 1) for k in dsk.keys()}
-    scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
+    # scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
 
     # Make sure the leafs are scheduled on the right actor
-    for key, val in dsk.items():
+    # for key, val in dsk.items():
+    #     match val:
+    #         case ("doreisa_chunk", actor_id):
+    #             scheduling[key] = actor_id
+    #         case _:
+    #             pass
+
+    def explore(k) -> int:
+        val = dsk[k]
+
         match val:
             case ("doreisa_chunk", actor_id):
-                scheduling[key] = actor_id
+                scheduling[k] = actor_id
             case _:
-                pass
+                res = [explore(dep) for dep in get_dependencies(dsk, k)]
+                scheduling[k] = Counter(res).most_common(1)[0][0]
+
+        return scheduling[k]
+
+    explore(key)
 
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
