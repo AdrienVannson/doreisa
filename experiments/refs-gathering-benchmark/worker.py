@@ -2,9 +2,10 @@ import os
 
 os.environ["RAY_worker_register_timeout_seconds"] = "3600"
 
+import sys
+
 import numpy as np
 import ray
-import sys
 
 rank = int(sys.argv[1])
 total = int(sys.argv[2])

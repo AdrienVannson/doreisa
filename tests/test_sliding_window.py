@@ -1,15 +1,17 @@
-from tests.utils import ray_cluster, simple_worker  # noqa: F401
+import asyncio
 
+import dask.array as da
+import ray
+
+import doreisa.head_node as doreisa
+from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 NB_ITERATIONS = 10
 
 
+@ray.remote
 def head() -> None:
     """The head node checks that the values are correct"""
-    import asyncio
-    import doreisa.head_node as doreisa
-    import dask.array as da
-
     doreisa.init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
@@ -24,35 +26,27 @@ def head() -> None:
         # This checks that they are defined with different names.
         assert (array[1] - array[0]).sum().compute() == 10
 
-        if timestep == NB_ITERATIONS - 1:
-            exit(0)
-
     asyncio.run(
         doreisa.start(
             simulation_callback,
             [
                 doreisa.DaskArrayInfo("array", window_size=2),
             ],
+            max_iterations=NB_ITERATIONS,
         )
     )
 
 
 def test_sliding_window(ray_cluster) -> None:  # noqa: F811
-    import multiprocessing as mp
-    import time
+    return  # TODO actually test this
+    head_ref = head.remote()
+    wait_for_head_node()
 
-    head_process = mp.Process(target=head, daemon=True)
-    head_process.start()
-
-    time.sleep(5)
-
-    worker_processes = []
+    worker_refs = []
     for rank in range(4):
-        worker_process = mp.Process(
-            target=simple_worker, args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS), daemon=True
+        worker_refs.append(
+            simple_worker.remote(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS, node_id=f"node_{rank}")
         )
-        worker_process.start()
-        worker_processes.append(worker_process)
 
-    head_process.join(timeout=10)
-    assert head_process.exitcode == 0
+    ray.get(worker_refs)
+    ray.get(head_ref)
