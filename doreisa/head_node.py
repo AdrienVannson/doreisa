@@ -193,8 +193,8 @@ class SimulationHead:
                         node_id=node_id,
                         soft=False,
                     ),
-                    # Prevents the actor from being stuck
-                    max_concurrency=1000_000_000,
+                    max_concurrency=1000_000_000,  # Prevents the actor from being stuck
+                    enable_task_events=False,
                 ).remote(actor_id)
 
             await self.scheduling_actors[node_id].ready.remote()  # type: ignore
@@ -242,6 +242,7 @@ async def start(simulation_callback, arrays_description: list[DaskArrayInfo], *,
         max_concurrency=1000_000_000,
         # Prevents the actor from being deleted when the function ends
         lifetime="detached",
+        enable_task_events=False,
     ).remote(arrays_description)
 
     print("Waiting to start the simulation...")

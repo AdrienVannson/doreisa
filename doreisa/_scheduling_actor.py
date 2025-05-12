@@ -45,7 +45,7 @@ def remote_ray_dask_get(dsk, keys):
 
         if first_call:
             assert all([isinstance(a, ray.ObjectRef) for a in args])
-            return patched_dask_task_wrapper.remote(
+            return patched_dask_task_wrapper.options(enable_task_events=False).remote(
                 func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=False
             )
 
@@ -131,7 +131,7 @@ class SchedulingActor:
         )
 
         if len(chunks_info) == nb_chunks_of_node:
-            await self.head.chunks_ready.remote(chunks_info, self.actor_id)
+            await self.head.chunks_ready.options(enable_task_events=False).remote(chunks_info, self.actor_id)
             self.chunks_info[array_name] = []
             self.chunks_ready_event.set()
             self.chunks_ready_event.clear()
@@ -141,7 +141,7 @@ class SchedulingActor:
     async def schedule_graph(self, dsk: dict, graph_id: int, scheduling: dict[str, int]):
         # Find the scheduling actors
         if not self.scheduling_actors:
-            self.scheduling_actors = await self.head.list_scheduling_actors.remote()
+            self.scheduling_actors = await self.head.list_scheduling_actors.options(enable_task_events=False).remote()
 
         info = GraphInfo()
         self.graph_infos[graph_id] = info
@@ -160,7 +160,7 @@ class SchedulingActor:
         # Adapt external keys
         for k in external_keys:
             actor = self.scheduling_actors[scheduling[k]]
-            dsk[k] = actor.get_value.remote(graph_id, k)
+            dsk[k] = actor.get_value.options(enable_task_events=False).remote(graph_id, k)
 
         # Replace the false chunks by the real ObjectRefs
         for key, val in dsk.items():
@@ -178,7 +178,7 @@ class SchedulingActor:
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)
 
-        refs = await remote_ray_dask_get.remote(dsk, keys_needed)
+        refs = await remote_ray_dask_get.options(enable_task_events=False).remote(dsk, keys_needed)
 
         for key, ref in zip(keys_needed, refs):
             info.refs[key] = ref

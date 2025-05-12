@@ -81,7 +81,9 @@ def doreisa_get(dsk, keys, **kwargs):
 
     ray.get(
         [
-            scheduling_actors[i].schedule_graph.remote(dsk_ref, graph_id, scheduling_ref)
+            scheduling_actors[i]
+            .schedule_graph.options(enable_task_events=False)
+            .remote(dsk_ref, graph_id, scheduling_ref)
             for i in range(len(scheduling_actors))
         ]
     )

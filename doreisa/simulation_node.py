@@ -64,9 +64,9 @@ class Client:
         # TODO add a test to check that _owner allows the script to terminate without loosing the ref
         # ref = ray.put(chunk, _owner=self.scheduling_actor)
         ref = ray.put(chunk)
-        ref = _pack_object_ref.remote([ref])
+        ref = _pack_object_ref.options(enable_task_events=False).remote([ref])
 
-        future: ray.ObjectRef = self.scheduling_actor.add_chunk.remote(
+        future: ray.ObjectRef = self.scheduling_actor.add_chunk.options(enable_task_events=False).remote(
             array_name,
             chunk_position,
             nb_chunks_per_dim,
