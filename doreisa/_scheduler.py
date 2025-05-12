@@ -77,7 +77,7 @@ def doreisa_get(dsk, keys, **kwargs):
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
 
-    graph_id = random.randint(0, 2**64 - 1)
+    graph_id = random.randint(0, 2**128 - 1)
 
     ray.get(
         [
