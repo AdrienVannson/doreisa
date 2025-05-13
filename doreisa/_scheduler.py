@@ -9,6 +9,9 @@ def doreisa_get(dsk, keys, **kwargs):
     # The graph may be a HighLevelGraph
     dsk = dict(dsk)
 
+    # Sort the graph by keys to make scheduling deterministic
+    dsk = {k: v for k, v in sorted(dsk.items())}
+
     head_node = ray.get_actor("simulation_head", namespace="doreisa")  # noqa: F841
 
     assert isinstance(keys, list) and len(keys) == 1
