@@ -194,6 +194,7 @@ class SimulationHead:
                         soft=False,
                     ),
                     max_concurrency=1000_000_000,  # Prevents the actor from being stuck
+                    num_cpus=0,
                     enable_task_events=False,
                 ).remote(actor_id)
 

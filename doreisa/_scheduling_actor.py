@@ -28,7 +28,7 @@ class ChunkReadyInfo:
     size: tuple[int, ...]
 
 
-@ray.remote
+@ray.remote(num_cpus=0, enable_task_events=False)
 def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=True):
     """
     Patched version of the original dask_task_wrapper function.
@@ -41,7 +41,8 @@ def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_c
 
     if first_call:
         assert all([isinstance(a, ray.ObjectRef) for a in args])
-        return patched_dask_task_wrapper.options(enable_task_events=False).remote(
+        # Use one CPU for the actual computation
+        return patched_dask_task_wrapper.options(num_cpus=1).remote(
             func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=False
         )
 
@@ -61,7 +62,7 @@ def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_c
     return result
 
 
-@ray.remote
+@ray.remote(num_cpus=0, enable_task_events=False)
 def remote_ray_dask_get(dsk, keys):
     import ray.util.dask
 
@@ -179,7 +180,7 @@ class SchedulingActor:
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)
 
-        refs = await remote_ray_dask_get.options(enable_task_events=False).remote(dsk, keys_needed)
+        refs = await remote_ray_dask_get.remote(dsk, keys_needed)
 
         for key, ref in zip(keys_needed, refs):
             info.refs[key] = ref
