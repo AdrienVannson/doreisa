@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import ray
 import ray.actor
+import ray.util.dask.scheduler
 from dask.core import get_dependencies
 
 
@@ -28,41 +29,41 @@ class ChunkReadyInfo:
 
 
 @ray.remote
+def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=True):
+    """
+    Patched version of the original dask_task_wrapper function.
+
+    This version received ObjectRefs first, and calls itself a second time to unwrap the ObjectRefs.
+    The result is an ObjectRef.
+
+    TODO can probably be rewritten without copying the whole function
+    """
+
+    if first_call:
+        assert all([isinstance(a, ray.ObjectRef) for a in args])
+        return patched_dask_task_wrapper.options(enable_task_events=False).remote(
+            func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=False
+        )
+
+    if ray_pretask_cbs is not None:
+        pre_states = [cb(key, args) if cb is not None else None for cb in ray_pretask_cbs]
+    repacked_args, repacked_deps = repack(args)
+    # Recursively execute Dask-inlined tasks.
+    actual_args = [ray.util.dask.scheduler._execute_task(a, repacked_deps) for a in repacked_args]
+    # Execute the actual underlying Dask task.
+    result = func(*actual_args)
+
+    if ray_posttask_cbs is not None:
+        for cb, pre_state in zip(ray_posttask_cbs, pre_states):
+            if cb is not None:
+                cb(key, result, pre_state)
+
+    return result
+
+
+@ray.remote
 def remote_ray_dask_get(dsk, keys):
     import ray.util.dask
-    import ray.util.dask.scheduler
-
-    @ray.remote
-    def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=True):
-        """
-        Patched version of the original dask_task_wrapper function.
-
-        This version received ObjectRefs first, and calls itself a second time to unwrap the ObjectRefs.
-        The result is an ObjectRef.
-
-        TODO can probably be rewritten without copying the whole function
-        """
-
-        if first_call:
-            assert all([isinstance(a, ray.ObjectRef) for a in args])
-            return patched_dask_task_wrapper.options(enable_task_events=False).remote(
-                func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=False
-            )
-
-        if ray_pretask_cbs is not None:
-            pre_states = [cb(key, args) if cb is not None else None for cb in ray_pretask_cbs]
-        repacked_args, repacked_deps = repack(args)
-        # Recursively execute Dask-inlined tasks.
-        actual_args = [ray.util.dask.scheduler._execute_task(a, repacked_deps) for a in repacked_args]
-        # Execute the actual underlying Dask task.
-        result = func(*actual_args)
-
-        if ray_posttask_cbs is not None:
-            for cb, pre_state in zip(ray_posttask_cbs, pre_states):
-                if cb is not None:
-                    cb(key, result, pre_state)
-
-        return result
 
     # Monkey-patch Dask-on-Ray
     ray.util.dask.scheduler.dask_task_wrapper = patched_dask_task_wrapper
