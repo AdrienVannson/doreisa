@@ -17,7 +17,7 @@ def head_script() -> None:
     doreisa.init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
-        x = array[0].sum().compute(optimize_graph=False)  # TODO optimize again
+        x = array[0].sum().compute()
 
         assert x == 10 * timestep
 
