@@ -4,6 +4,8 @@ from collections import Counter
 import ray
 from dask.core import get_dependencies
 
+from doreisa._scheduling_actor import ChunkRef
+
 
 def doreisa_get(dsk, keys, **kwargs):
     # The graph may be a HighLevelGraph
@@ -66,12 +68,11 @@ def doreisa_get(dsk, keys, **kwargs):
     def explore(k) -> int:
         val = dsk[k]
 
-        match val:
-            case ("doreisa_chunk", actor_id):
-                scheduling[k] = actor_id
-            case _:
-                res = [explore(dep) for dep in get_dependencies(dsk, k)]
-                scheduling[k] = Counter(res).most_common(1)[0][0]
+        if isinstance(val, ChunkRef):
+            scheduling[k] = val.actor_id
+        else:
+            res = [explore(dep) for dep in get_dependencies(dsk, k)]
+            scheduling[k] = Counter(res).most_common(1)[0][0]
 
         return scheduling[k]
 

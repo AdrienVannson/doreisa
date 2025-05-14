@@ -7,6 +7,21 @@ import ray.util.dask.scheduler
 from dask.core import get_dependencies
 
 
+@dataclass
+class ChunkRef:
+    """
+    Represents a chunk of an array in a Dask task graph.
+
+    The task corresping to this object must be scheduled by the actor who has the actual
+    data. This class is used since Dask tends to inline simple tuples. This may change
+    in newer versions of Dask.
+    """
+
+    actor_id: int
+    array_name: str
+    position: tuple[int, ...]
+
+
 class GraphInfo:
     """
     Information about graphs and their scheduling.
@@ -166,16 +181,14 @@ class SchedulingActor:
 
         # Replace the false chunks by the real ObjectRefs
         for key, val in dsk.items():
-            match val:
-                case ("doreisa_chunk", actor_id):
-                    assert actor_id == self.actor_id
+            if isinstance(val, ChunkRef):
+                assert val.actor_id == self.actor_id
 
-                    array_name = "_".join(key[0].split("_")[:-1])
-                    assert isinstance(array_name, str)
+                # Remove the iteration number
+                # TODO this is not a good idea
+                array_name = "_".join(key[0].split("_")[:-1])
 
-                    dsk[key] = self.local_chunks[(array_name, key[1:])]
-                case _:
-                    pass
+                dsk[key] = self.local_chunks[(array_name, val.position)]
 
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)

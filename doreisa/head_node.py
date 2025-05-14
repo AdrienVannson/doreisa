@@ -12,7 +12,7 @@ from dask.highlevelgraph import HighLevelGraph
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
 from doreisa._scheduler import doreisa_get
-from doreisa._scheduling_actor import ChunkReadyInfo, SchedulingActor
+from doreisa._scheduling_actor import ChunkReadyInfo, ChunkRef, SchedulingActor
 
 
 def init():
@@ -116,8 +116,9 @@ class _DaskArrayData:
         name = f"{self.description.name}_{self.timestep}"
 
         graph = {
-            # Adding the id function prevents inlining the value
-            (name,) + position: ("doreisa_chunk", actor_id)
+            # We need to repeat the name and position in the value since the key might be removed
+            # by the Dask optimizer
+            (name,) + position: ChunkRef(actor_id, name, position)
             for position, actor_id in self.scheduling_actors_id.items()
         }
 
