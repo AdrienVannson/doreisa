@@ -1,9 +1,6 @@
-import asyncio
-
 import dask.array as da
 import ray
 
-import doreisa.head_node as doreisa
 from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 NB_ITERATIONS = 10
@@ -12,7 +9,10 @@ NB_ITERATIONS = 10
 @ray.remote
 def head() -> None:
     """The head node checks that the values are correct"""
-    doreisa.init()
+    from doreisa.head_node import init
+    from doreisa.window_api import ArrayDefinition, run_simulation
+
+    init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
         if timestep == 0:
@@ -26,27 +26,23 @@ def head() -> None:
         # This checks that they are defined with different names.
         assert (array[1] - array[0]).sum().compute() == 10
 
-    asyncio.run(
-        doreisa.start(
-            simulation_callback,
-            [
-                doreisa.DaskArrayInfo("array", window_size=2),
-            ],
-            max_iterations=NB_ITERATIONS,
-        )
+    run_simulation(
+        simulation_callback,
+        [
+            ArrayDefinition("array", window_size=2),
+        ],
+        max_iterations=NB_ITERATIONS,
     )
 
 
 def test_sliding_window(ray_cluster) -> None:  # noqa: F811
-    return  # TODO actually test this
     head_ref = head.remote()
     wait_for_head_node()
 
     worker_refs = []
     for rank in range(4):
         worker_refs.append(
-            simple_worker.remote(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS, node_id=f"node_{rank}")
+            simple_worker.remote(rank, (rank // 2, rank % 2), (2, 2), 1, (1, 1), NB_ITERATIONS, node_id=f"node_{rank}")
         )
 
-    ray.get(worker_refs)
-    ray.get(head_ref)
+    ray.get([head_ref] + worker_refs)

@@ -38,6 +38,8 @@ class Client:
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
+        self.timestep = 0
+
     def add_chunk(
         self,
         array_name: str,
@@ -68,12 +70,15 @@ class Client:
 
         future: ray.ObjectRef = self.scheduling_actor.add_chunk.options(enable_task_events=False).remote(
             array_name,
+            self.timestep,
             chunk_position,
             nb_chunks_per_dim,
             nb_chunks_of_node,
             [ref],
             chunk.shape,
         )  # type: ignore
+
+        self.timestep += 1
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)

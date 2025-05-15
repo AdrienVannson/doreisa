@@ -6,6 +6,8 @@ import ray.actor
 import ray.util.dask.scheduler
 from dask.core import get_dependencies
 
+from doreisa import Timestep
+
 
 @dataclass
 class ChunkRef:
@@ -18,7 +20,8 @@ class ChunkRef:
     """
 
     actor_id: int
-    array_name: str
+    array_name: str  # The real name, without the timestep
+    timestep: Timestep
     position: tuple[int, ...]
 
 
@@ -36,6 +39,7 @@ class GraphInfo:
 class ChunkReadyInfo:
     # Information about the array
     array_name: str
+    timestep: Timestep
     nb_chunks_per_dim: tuple[int, ...]
 
     # Information about the chunk
@@ -105,11 +109,9 @@ class SchedulingActor:
 
         self.chunks_info: dict[str, list[ChunkReadyInfo]] = {}
 
-        # (array_name, position) -> chunk
-        self.local_chunks: dict[tuple[str, tuple[int, ...]], ray.ObjectRef] = {}
-
-        # TODO delete, doesn't work with windows
-        self.array_used = asyncio.Event()
+        # (dask_array_name, position) -> chunk
+        # The Dask array name contains the timestep
+        self.local_chunks: dict[tuple[str, Timestep, tuple[int, ...]], ray.ObjectRef] = {}
 
         # For scheduling
         self.new_graph_available = asyncio.Event()
@@ -121,18 +123,15 @@ class SchedulingActor:
     async def add_chunk(
         self,
         array_name: str,
+        timestep: int,
         chunk_position: tuple[int, ...],
         nb_chunks_per_dim: tuple[int, ...],
         nb_chunks_of_node: int,
         chunk: list[ray.ObjectRef],
         chunk_shape: tuple[int, ...],
     ) -> None:
-        # TODO change this small hack
-        if (array_name, chunk_position) in self.local_chunks:
-            await self.array_used.wait()
-            assert (array_name, chunk_position) not in self.local_chunks
-
-        self.local_chunks[(array_name, chunk_position)] = chunk[0]
+        assert (array_name, timestep, chunk_position) not in self.local_chunks
+        self.local_chunks[(array_name, timestep, chunk_position)] = chunk[0]
 
         if array_name not in self.chunks_info:
             self.chunks_info[array_name] = []
@@ -141,6 +140,7 @@ class SchedulingActor:
         chunks_info.append(
             ChunkReadyInfo(
                 array_name=array_name,
+                timestep=timestep,
                 nb_chunks_per_dim=nb_chunks_per_dim,
                 position=chunk_position,
                 size=chunk_shape,
@@ -184,11 +184,7 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                # Remove the iteration number
-                # TODO this is not a good idea
-                array_name = "_".join(key[0].split("_")[:-1])
-
-                dsk[key] = self.local_chunks[(array_name, val.position)]
+                dsk[key] = self.local_chunks[(val.array_name, val.timestep, val.position)]
 
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)
@@ -200,20 +196,9 @@ class SchedulingActor:
 
         info.scheduled_event.set()
 
-        self.local_chunks = {}
-        self.array_used.set()
-        self.array_used.clear()
-
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:
             await self.new_graph_available.wait()
 
         await self.graph_infos[graph_id].scheduled_event.wait()
         return await self.graph_infos[graph_id].refs[key]
-
-    # TODO
-    # async def terminate_graph(self, graph_id: int):
-    #     while graph_id not in self.graph_infos:
-    #         await self.new_graph_available.wait()
-
-    #     del self.graph_infos[graph_id]
