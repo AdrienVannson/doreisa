@@ -1,5 +1,3 @@
-import asyncio
-
 import dask.array as da
 import pytest
 import ray
@@ -12,21 +10,20 @@ NB_ITERATIONS = 10
 @ray.remote
 def head_script() -> None:
     """The head node checks that the values are correct"""
-    import doreisa.head_node as doreisa
+    from doreisa.head_node import init
+    from doreisa.window_api import ArrayDefinition, run_simulation
 
-    doreisa.init()
+    init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
         x = array[0].sum().compute()
 
         assert x == 10 * timestep
 
-    asyncio.run(
-        doreisa.start(
-            simulation_callback,
-            [doreisa.DaskArrayInfo("array", window_size=1)],
-            max_iterations=NB_ITERATIONS,
-        )
+    run_simulation(
+        simulation_callback,
+        [ArrayDefinition("array", window_size=1)],
+        max_iterations=NB_ITERATIONS,
     )
 
 

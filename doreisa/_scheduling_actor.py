@@ -6,6 +6,8 @@ import ray.actor
 import ray.util.dask.scheduler
 from dask.core import get_dependencies
 
+from doreisa import Timestep
+
 
 @dataclass
 class ChunkRef:
@@ -36,6 +38,7 @@ class GraphInfo:
 class ChunkReadyInfo:
     # Information about the array
     array_name: str
+    timestep: Timestep
     nb_chunks_per_dim: tuple[int, ...]
 
     # Information about the chunk
@@ -121,6 +124,7 @@ class SchedulingActor:
     async def add_chunk(
         self,
         array_name: str,
+        timestep: int,
         chunk_position: tuple[int, ...],
         nb_chunks_per_dim: tuple[int, ...],
         nb_chunks_of_node: int,
@@ -141,6 +145,7 @@ class SchedulingActor:
         chunks_info.append(
             ChunkReadyInfo(
                 array_name=array_name,
+                timestep=timestep,
                 nb_chunks_per_dim=nb_chunks_per_dim,
                 position=chunk_position,
                 size=chunk_shape,
