@@ -32,9 +32,9 @@ def run_simulation(
     #   - The list may be longer than the window size if the array are not produced in order
     all_arrays: dict[str, list[da.Array]] = {description.name: [] for description in arrays_description}
 
-    for timestep in range(max_iterations):
+    for iteration in range(max_iterations):
         # Get new arrays
-        while any(len(arrays) < windows_size[name] for name, arrays in all_arrays.items()):
+        while any(len(array) < min(windows_size[name], iteration + 1) for name, array in all_arrays.items()):
             name: str
             timestep: int
             array: da.Array
