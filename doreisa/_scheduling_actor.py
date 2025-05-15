@@ -202,10 +202,3 @@ class SchedulingActor:
 
         await self.graph_infos[graph_id].scheduled_event.wait()
         return await self.graph_infos[graph_id].refs[key]
-
-    # TODO
-    # async def terminate_graph(self, graph_id: int):
-    #     while graph_id not in self.graph_infos:
-    #         await self.new_graph_available.wait()
-
-    #     del self.graph_infos[graph_id]
