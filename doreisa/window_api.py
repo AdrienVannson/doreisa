@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Callable
+import gc
 
 import dask.array as da
 import ray
@@ -54,3 +55,8 @@ def run_simulation(
         for name, arrays in all_arrays.items():
             if len(arrays) >= windows_size[name]:
                 arrays.pop(0)
+
+        # Free the memory used by the arrays now. Since an ObjectRef is a small object,
+        # Python may otherwise choose to keep it in memory for some time, preventing the
+        # actual data to be freed.
+        gc.collect()
