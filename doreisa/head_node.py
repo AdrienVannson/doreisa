@@ -98,20 +98,20 @@ class _DaskArrayData:
 
         # We need to add the timestep since the same name can be used several times for different
         # timesteps
-        name = f"{self.definition.name}_{self.timestep}"
+        dask_name = f"{self.definition.name}_{self.timestep}"
 
         graph = {
             # We need to repeat the name and position in the value since the key might be removed
             # by the Dask optimizer
-            (name,) + position: ChunkRef(actor_id, name, position)
+            (dask_name,) + position: ChunkRef(actor_id, self.definition.name, self.timestep, position)
             for position, actor_id in self.scheduling_actors_id.items()
         }
 
-        dsk = HighLevelGraph.from_collections(name, graph, dependencies=())
+        dsk = HighLevelGraph.from_collections(dask_name, graph, dependencies=())
 
         full_array = da.Array(
             dsk,
-            name,
+            dask_name,
             chunks=self.chunks_size,
             dtype=np.float64,  # TODO: Use the right dtype
         )

@@ -20,7 +20,8 @@ class ChunkRef:
     """
 
     actor_id: int
-    array_name: str
+    array_name: str  # The real name, without the timestep
+    timestep: Timestep
     position: tuple[int, ...]
 
 
@@ -108,11 +109,9 @@ class SchedulingActor:
 
         self.chunks_info: dict[str, list[ChunkReadyInfo]] = {}
 
-        # (array_name, position) -> chunk
-        self.local_chunks: dict[tuple[str, tuple[int, ...]], ray.ObjectRef] = {}
-
-        # TODO delete, doesn't work with windows
-        self.array_used = asyncio.Event()
+        # (dask_array_name, position) -> chunk
+        # The Dask array name contains the timestep
+        self.local_chunks: dict[tuple[str, Timestep, tuple[int, ...]], ray.ObjectRef] = {}
 
         # For scheduling
         self.new_graph_available = asyncio.Event()
@@ -131,12 +130,8 @@ class SchedulingActor:
         chunk: list[ray.ObjectRef],
         chunk_shape: tuple[int, ...],
     ) -> None:
-        # TODO change this small hack
-        if (array_name, chunk_position) in self.local_chunks:
-            await self.array_used.wait()
-            assert (array_name, chunk_position) not in self.local_chunks
-
-        self.local_chunks[(array_name, chunk_position)] = chunk[0]
+        assert (array_name, timestep, chunk_position) not in self.local_chunks
+        self.local_chunks[(array_name, timestep, chunk_position)] = chunk[0]
 
         if array_name not in self.chunks_info:
             self.chunks_info[array_name] = []
@@ -189,11 +184,7 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                # Remove the iteration number
-                # TODO this is not a good idea
-                array_name = "_".join(key[0].split("_")[:-1])
-
-                dsk[key] = self.local_chunks[(array_name, val.position)]
+                dsk[key] = self.local_chunks[(val.array_name, val.timestep, val.position)]
 
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)
@@ -204,10 +195,6 @@ class SchedulingActor:
             info.refs[key] = ref
 
         info.scheduled_event.set()
-
-        self.local_chunks = {}
-        self.array_used.set()
-        self.array_used.clear()
 
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:
