@@ -1,6 +1,6 @@
+import gc
 from dataclasses import dataclass
 from typing import Any, Callable
-import gc
 
 import dask.array as da
 import ray
