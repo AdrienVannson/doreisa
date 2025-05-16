@@ -24,13 +24,13 @@ def wait_for_head_node() -> None:
 
 @ray.remote
 def simple_worker(
+    *,
     rank: int,
     position: tuple[int, ...],
     chunks_per_dim: tuple[int, ...],
     nb_chunks_of_node: int,
     chunk_size: tuple[int, ...],
     nb_iterations: int,
-    *,
     node_id: str | None = None,
 ) -> None:
     """Worker node sending chunks of data"""

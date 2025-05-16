@@ -108,7 +108,6 @@ class _DaskArrayData:
         assert self.nb_chunks is not None and self.nb_chunks_per_dim is not None
 
         all_chunks = ray.put(self.chunk_refs)
-        self.chunk_refs.clear()
 
         # We need to add the timestep since the same name can be used several times for different
         # timesteps
@@ -267,7 +266,7 @@ class SimulationHead:
                         array.get_full_array(),
                     )
                 )
-                del self.arrays[(chunk.array_name, chunk.timestep)]
+                # del self.arrays[(chunk.array_name, chunk.timestep)]
 
     async def get_next_array(self) -> tuple[str, int, da.Array]:
         array = await self.arrays_ready.get()
