@@ -36,12 +36,12 @@ def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
     for rank in range(4):
         worker_refs.append(
             simple_worker.remote(
-                rank,
-                (rank // 2, rank % 2),
-                (2, 2),
-                4 // nb_nodes,
-                (1, 1),
-                NB_ITERATIONS,
+                rank=rank,
+                position=(rank // 2, rank % 2),
+                chunks_per_dim=(2, 2),
+                nb_chunks_of_node=4 // nb_nodes,
+                chunk_size=(1, 1),
+                nb_iterations=NB_ITERATIONS,
                 node_id=f"node_{rank % nb_nodes}",
             )
         )

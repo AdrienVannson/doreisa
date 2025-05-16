@@ -23,7 +23,7 @@ def head_script() -> None:
 
     run_simulation(
         simulation_callback,
-        [ArrayDefinition("array", window_size=2)],
+        [ArrayDefinition("array", window_size=1)],
         max_iterations=NB_ITERATIONS,
     )
 

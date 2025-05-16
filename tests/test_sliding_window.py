@@ -42,7 +42,15 @@ def test_sliding_window(ray_cluster) -> None:  # noqa: F811
     worker_refs = []
     for rank in range(4):
         worker_refs.append(
-            simple_worker.remote(rank, (rank // 2, rank % 2), (2, 2), 1, (1, 1), NB_ITERATIONS, node_id=f"node_{rank}")
+            simple_worker.remote(
+                rank=rank,
+                position=(rank // 2, rank % 2),
+                chunks_per_dim=(2, 2),
+                nb_chunks_of_node=1,
+                chunk_size=(1, 1),
+                nb_iterations=NB_ITERATIONS,
+                node_id=f"node_{rank}",
+            )
         )
 
     ray.get([head_ref] + worker_refs)
