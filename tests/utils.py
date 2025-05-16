@@ -7,11 +7,8 @@ import ray
 @pytest.fixture
 def ray_cluster():
     """Start a Ray cluster for this test"""
-    ray.init(num_cpus=100)
-    # ray.init(address="auto")
-
+    ray.init()
     yield
-
     ray.shutdown()
 
 
