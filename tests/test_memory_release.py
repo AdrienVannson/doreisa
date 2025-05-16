@@ -38,6 +38,11 @@ def ray_spilling_cluster():
 
 
 def test_memory_release(ray_spilling_cluster: str) -> None:  # noqa: F811
+    """
+    Perform a long simulation with a small object store spilling to disk. If the
+    memory is not released correctly, the test will detect spilled objects on disk and
+    fail.
+    """
     head_ref = head_script.remote()
     wait_for_head_node()
 
