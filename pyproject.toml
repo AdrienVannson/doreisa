@@ -9,7 +9,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "dask[dataframe] (==2024.6.0)",
-    "ray[default] (>=2.43.0,<3.0.0)",
+    "ray[default] (>=2.46.0,<3.0.0)",
+    # "ray[default] (==2.37.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "ipywidgets (>=8.1.5,<9.0.0)",
     "jinja2 (>=3.1.5,<4.0.0)",
@@ -35,6 +36,12 @@ line-length = 120
 exclude = ["build", "dist", ".venv"]
 
 [tool.poe.tasks]
-format = "ruff format"
+test = "pytest ."
 check = "ruff check"
 typecheck = "pyright doreisa head.py"
+_format = "ruff format"
+_sort-imports = "ruff check --select I --fix"
+
+[tool.poe.tasks.format]
+sequence = ["_format", "_sort-imports"]
+help = "Format the source code, and sort the imports"

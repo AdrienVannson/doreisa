@@ -4,10 +4,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 import asyncio
-import doreisa.head_node as doreisa
+import time
+
 import dask.array as da
 import numpy as np
-import time
+
+import doreisa.head_node as doreisa
 
 doreisa.init()
 

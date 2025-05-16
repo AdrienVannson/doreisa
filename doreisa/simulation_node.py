@@ -1,13 +1,15 @@
-import numpy as np
-import ray
-from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
+import ray
+import ray.actor
 
-@dataclass
-class _Chunk:
-    array_name: str
-    chunk_position: tuple[int, ...]
+
+@ray.remote(num_cpus=0, enable_task_events=False)
+def _pack_object_ref(refs: list[ray.ObjectRef]):
+    # This function is used to create an ObjectRef containing the given ObjectRef.
+    # This allows having the expected format in the task graph.
+    return refs[0]
 
 
 class Client:
@@ -18,26 +20,65 @@ class Client:
     array.
     """
 
-    def __init__(self, rank: int) -> None:
-        self.head = ray.get_actor("simulation_head", namespace="doreisa")
+    def __init__(self, *, _fake_node_id: str | None = None) -> None:
+        """
+        Args:
+            _fake_node_id: The ID of the node. If None, the ID is taken from the Ray runtime context.
+                This is useful for testing with several scheduling actors on a single machine.
+        """
+        if not ray.is_initialized():
+            ray.init(address="auto")
 
-        self.rank = rank
+        self.node_id = _fake_node_id or ray.get_runtime_context().get_node_id()
+
+        self.head = ray.get_actor("simulation_head", namespace="doreisa")
+        self.scheduling_actor: ray.actor.ActorHandle = ray.get(
+            self.head.scheduling_actor.remote(self.node_id, is_fake_id=bool(_fake_node_id))
+        )
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
+
+        self.timestep = 0
 
     def add_chunk(
         self,
         array_name: str,
         chunk_position: tuple[int, ...],
         nb_chunks_per_dim: tuple[int, ...],
+        nb_chunks_of_node: int,
         chunk: np.ndarray,
         store_externally: bool = False,
     ) -> None:
+        """
+        Make a chunk of data available to the analytic.
+
+        Args:
+            array_name: The name of the array.
+            chunk_position: The position of the chunk in the array.
+            nb_chunks_per_dim: The number of chunks per dimension.
+            nb_chunks_of_node: The number of chunks sent by this node. The scheduling actor will
+                inform the head actor when all the chunks are ready.
+            chunk: The chunk of data.
+            store_externally: If True, the data is stored externally. TODO Not implemented yet.
+        """
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
-        future = self.head.add_chunk.remote(
-            array_name, chunk_position, nb_chunks_per_dim, [ray.put(chunk)], chunk.shape
-        )
+        # TODO add a test to check that _owner allows the script to terminate without loosing the ref
+        # ref = ray.put(chunk, _owner=self.scheduling_actor)
+        ref = ray.put(chunk)
+        ref = _pack_object_ref.remote([ref])
+
+        future: ray.ObjectRef = self.scheduling_actor.add_chunk.options(enable_task_events=False).remote(
+            array_name,
+            self.timestep,
+            chunk_position,
+            nb_chunks_per_dim,
+            nb_chunks_of_node,
+            [ref],
+            chunk.shape,
+        )  # type: ignore
+
+        self.timestep += 1
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)

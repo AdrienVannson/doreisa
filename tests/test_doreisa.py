@@ -1,52 +1,53 @@
-from tests.utils import ray_cluster, simple_worker  # noqa: F401
+import dask.array as da
+import pytest
+import ray
 
+from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 NB_ITERATIONS = 10
 
 
-def head() -> None:
+@ray.remote
+def head_script() -> None:
     """The head node checks that the values are correct"""
-    import asyncio
-    import doreisa.head_node as doreisa
-    import dask.array as da
+    from doreisa.head_node import init
+    from doreisa.window_api import ArrayDefinition, run_simulation
 
-    doreisa.init()
+    init()
 
     def simulation_callback(array: list[da.Array], timestep: int):
         x = array[0].sum().compute()
 
-        if x != 10 * timestep:
-            exit(1)
+        assert x == 10 * timestep
 
-        if timestep == NB_ITERATIONS - 1:
-            exit(0)
-
-    asyncio.run(
-        doreisa.start(
-            simulation_callback,
-            [
-                doreisa.DaskArrayInfo("array", window_size=1),
-            ],
-        )
+    run_simulation(
+        simulation_callback,
+        [ArrayDefinition("array", window_size=1)],
+        max_iterations=NB_ITERATIONS,
     )
 
 
-def test_doreisa(ray_cluster) -> None:  # noqa: F811
-    import multiprocessing as mp
-    import time
+@pytest.mark.parametrize("nb_nodes", [1, 2, 4])
+def test_doreisa(nb_nodes: int, ray_cluster) -> None:  # noqa: F811
+    head_ref = head_script.remote()
+    wait_for_head_node()
 
-    head_process = mp.Process(target=head, daemon=True)
-    head_process.start()
-
-    time.sleep(5)
-
-    worker_processes = []
+    worker_refs = []
     for rank in range(4):
-        worker_process = mp.Process(
-            target=simple_worker, args=(rank, (rank // 2, rank % 2), (2, 2), (1, 1), NB_ITERATIONS), daemon=True
+        worker_refs.append(
+            simple_worker.remote(
+                rank=rank,
+                position=(rank // 2, rank % 2),
+                chunks_per_dim=(2, 2),
+                nb_chunks_of_node=4 // nb_nodes,
+                chunk_size=(1, 1),
+                nb_iterations=NB_ITERATIONS,
+                node_id=f"node_{rank % nb_nodes}",
+            )
         )
-        worker_process.start()
-        worker_processes.append(worker_process)
 
-    head_process.join(timeout=10)
-    assert head_process.exitcode == 0
+    ray.get([head_ref] + worker_refs)
+
+    # Check that the right number of scheduling actors were created
+    simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
+    assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_nodes

@@ -1,5 +1,5 @@
-from matplotlib import pyplot as plt
 import matplotlib.ticker
+from matplotlib import pyplot as plt
 
 data = """36 19.1283917427063 54.62046146392822
 72 37.082438468933105 107.1160101890564
