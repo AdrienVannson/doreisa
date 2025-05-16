@@ -52,6 +52,14 @@ class _DaskArrayData:
         # ID of the scheduling actor in charge of the chunk at each position
         self.scheduling_actors_id: dict[tuple[int, ...], int] = {}
 
+        # Each reference comes from one scheduling actor. The reference a list of
+        # ObjectRefs, each ObjectRef corresponding to a chunk. These references
+        # shouldn't be used directly. They exists only to release the memory
+        # automatically.
+        # When the array is buit, these references are put in the object store, and the
+        # global reference is added to the Dask graph. Then, the list is cleared.
+        self.chunk_refs: list[ray.ObjectRef] = []
+
     def add_chunk(
         self,
         size: tuple[int, ...],
@@ -89,12 +97,17 @@ class _DaskArrayData:
             return True
         return False
 
+    def add_chunk_ref(self, chunk_ref: ray.ObjectRef) -> None:
+        self.chunk_refs.append(chunk_ref)
+
     def get_full_array(self) -> da.Array:
         """
         Return the full Dask array.
         """
         assert len(self.scheduling_actors_id) == self.nb_chunks
         assert self.nb_chunks is not None and self.nb_chunks_per_dim is not None
+
+        all_chunks = ray.put(self.chunk_refs)
 
         # We need to add the timestep since the same name can be used several times for different
         # timesteps
@@ -103,8 +116,10 @@ class _DaskArrayData:
         graph = {
             # We need to repeat the name and position in the value since the key might be removed
             # by the Dask optimizer
-            (dask_name,) + position: ChunkRef(actor_id, self.definition.name, self.timestep, position)
-            for position, actor_id in self.scheduling_actors_id.items()
+            (dask_name,) + position: ChunkRef(
+                actor_id, self.definition.name, self.timestep, position, _all_chunks=all_chunks if it == 0 else None
+            )
+            for it, (position, actor_id) in enumerate(self.scheduling_actors_id.items())
         }
 
         dsk = HighLevelGraph.from_collections(dask_name, graph, dependencies=())
@@ -167,6 +182,9 @@ class SimulationHead:
         # Must be used before creating a new array
         self.new_pending_array_semaphore = asyncio.Semaphore(max_pending_arrays)
 
+        # Triggered when a new array is added to self.arrays
+        self.new_array_created = asyncio.Event()
+
         # Arrays beeing built
         self.arrays: dict[tuple[str, Timestep], _DaskArrayData] = {}
 
@@ -216,7 +234,9 @@ class SimulationHead:
         """
         return {name: definition.preprocess for name, definition in self.arrays_definition.items()}
 
-    async def chunks_ready(self, chunks: list[ChunkReadyInfo], scheduling_actor_id: int) -> None:
+    async def chunks_ready(
+        self, chunks: list[ChunkReadyInfo], scheduling_actor_id: int, all_chunks_ref: list[ray.ObjectRef]
+    ) -> None:
         """
         Called by the scheduling actors to inform the head actor that the chunks are ready.
         The chunks are not sent.
@@ -225,15 +245,33 @@ class SimulationHead:
             chunks: Information about the chunks that are ready.
             source_actor: Handle to the scheduling actor owning the chunks.
         """
-        for chunk in chunks:
-            if (chunk.array_name, chunk.timestep) not in self.arrays:
-                await self.new_pending_array_semaphore.acquire()
+        for it, chunk in enumerate(chunks):
+            while (chunk.array_name, chunk.timestep) not in self.arrays:
+                t1 = asyncio.create_task(self.new_pending_array_semaphore.acquire())
+                t2 = asyncio.create_task(self.new_array_created.wait())
 
-                self.arrays[(chunk.array_name, chunk.timestep)] = _DaskArrayData(
-                    self.arrays_definition[chunk.array_name], chunk.timestep
-                )
+                done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
+
+                for task in pending:
+                    task.cancel()
+
+                if t1 in done:
+                    if (chunk.array_name, chunk.timestep) in self.arrays:
+                        # The array was already created by another scheduling actor
+                        self.new_pending_array_semaphore.release()
+                    else:
+                        self.arrays[(chunk.array_name, chunk.timestep)] = _DaskArrayData(
+                            self.arrays_definition[chunk.array_name], chunk.timestep
+                        )
+
+                        self.new_array_created.set()
+                        self.new_array_created.clear()
 
             array = self.arrays[(chunk.array_name, chunk.timestep)]
+
+            # TODO refactor so that the function works with only one array
+            if it == 0:
+                array.add_chunk_ref(all_chunks_ref[0])
 
             is_ready = array.add_chunk(chunk.size, chunk.position, chunk.nb_chunks_per_dim, scheduling_actor_id)
 

@@ -7,11 +7,8 @@ import ray
 @pytest.fixture
 def ray_cluster():
     """Start a Ray cluster for this test"""
-    ray.init(num_cpus=100)
-    # ray.init(address="auto")
-
+    ray.init()
     yield
-
     ray.shutdown()
 
 
@@ -27,13 +24,13 @@ def wait_for_head_node() -> None:
 
 @ray.remote
 def simple_worker(
+    *,
     rank: int,
     position: tuple[int, ...],
     chunks_per_dim: tuple[int, ...],
     nb_chunks_of_node: int,
     chunk_size: tuple[int, ...],
     nb_iterations: int,
-    *,
     node_id: str | None = None,
 ) -> None:
     """Worker node sending chunks of data"""

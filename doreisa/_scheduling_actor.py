@@ -1,4 +1,5 @@
 import asyncio
+import pickle
 from dataclasses import dataclass
 
 import ray
@@ -23,6 +24,9 @@ class ChunkRef:
     array_name: str  # The real name, without the timestep
     timestep: Timestep
     position: tuple[int, ...]
+
+    # Set for one chunk only.
+    _all_chunks: ray.ObjectRef | None = None
 
 
 class GraphInfo:
@@ -111,7 +115,7 @@ class SchedulingActor:
 
         # (dask_array_name, position) -> chunk
         # The Dask array name contains the timestep
-        self.local_chunks: dict[tuple[str, Timestep, tuple[int, ...]], ray.ObjectRef] = {}
+        self.local_chunks: dict[tuple[str, Timestep, tuple[int, ...]], ray.ObjectRef | bytes] = {}
 
         # For scheduling
         self.new_graph_available = asyncio.Event()
@@ -148,7 +152,18 @@ class SchedulingActor:
         )
 
         if len(chunks_info) == nb_chunks_of_node:
-            await self.head.chunks_ready.options(enable_task_events=False).remote(chunks_info, self.actor_id)
+            chunks = []
+            for info in chunks_info:
+                c = self.local_chunks[(info.array_name, info.timestep, info.position)]
+                assert isinstance(c, ray.ObjectRef)
+                chunks.append(c)
+                self.local_chunks[(info.array_name, info.timestep, info.position)] = pickle.dumps(c)
+
+            all_chunks_ref = ray.put(chunks)
+
+            await self.head.chunks_ready.options(enable_task_events=False).remote(
+                chunks_info, self.actor_id, [all_chunks_ref]
+            )
             self.chunks_info[array_name] = []
             self.chunks_ready_event.set()
             self.chunks_ready_event.clear()
@@ -184,7 +199,9 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                dsk[key] = self.local_chunks[(val.array_name, val.timestep, val.position)]
+                encoded_ref = self.local_chunks[(val.array_name, val.timestep, val.position)]
+                assert isinstance(encoded_ref, bytes)
+                dsk[key] = pickle.loads(encoded_ref)
 
         # We will need the ObjectRefs of these keys
         keys_needed = list(local_keys - dependency_keys)
