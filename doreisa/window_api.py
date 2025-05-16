@@ -25,7 +25,10 @@ def run_simulation(
     ]
     windows_size = {definition.name: definition.window_size for definition in arrays_description}
 
-    head: Any = SimulationHead.options(**get_head_actor_options()).remote(head_arrays_description)
+    # Limit the advance the simulation can have over the analytics
+    max_pending_arrays = 2 * len(arrays_description)
+
+    head: Any = SimulationHead.options(**get_head_actor_options()).remote(head_arrays_description, max_pending_arrays)
 
     # The array values needed for the analytics
     # Each list contains the arrays for several timesteps:

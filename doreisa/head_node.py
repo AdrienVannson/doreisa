@@ -182,6 +182,9 @@ class SimulationHead:
         # Must be used before creating a new array
         self.new_pending_array_semaphore = asyncio.Semaphore(max_pending_arrays)
 
+        # Triggered when a new array is added to self.arrays
+        self.new_array_created = asyncio.Event()
+
         # Arrays beeing built
         self.arrays: dict[tuple[str, Timestep], _DaskArrayData] = {}
 
@@ -243,12 +246,26 @@ class SimulationHead:
             source_actor: Handle to the scheduling actor owning the chunks.
         """
         for it, chunk in enumerate(chunks):
-            if (chunk.array_name, chunk.timestep) not in self.arrays:
-                await self.new_pending_array_semaphore.acquire()
+            while (chunk.array_name, chunk.timestep) not in self.arrays:
+                t1 = asyncio.create_task(self.new_pending_array_semaphore.acquire())
+                t2 = asyncio.create_task(self.new_array_created.wait())
 
-                self.arrays[(chunk.array_name, chunk.timestep)] = _DaskArrayData(
-                    self.arrays_definition[chunk.array_name], chunk.timestep
-                )
+                done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
+
+                for task in pending:
+                    task.cancel()
+
+                if t1 in done:
+                    if (chunk.array_name, chunk.timestep) in self.arrays:
+                        # The array was already created by another scheduling actor
+                        self.new_pending_array_semaphore.release()
+                    else:
+                        self.arrays[(chunk.array_name, chunk.timestep)] = _DaskArrayData(
+                            self.arrays_definition[chunk.array_name], chunk.timestep
+                        )
+
+                        self.new_array_created.set()
+                        self.new_array_created.clear()
 
             array = self.arrays[(chunk.array_name, chunk.timestep)]
 
