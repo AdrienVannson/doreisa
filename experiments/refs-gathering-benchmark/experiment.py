@@ -4,10 +4,11 @@ Run an experiment to dertermine the maximum number of references that a single n
 This script must be executed from the root of the repository.
 """
 
+import threading
+import time
+
 import execo
 import execo_g5k
-import time
-import threading
 
 
 def run_experiment(nb_reserved_nodes: int, nb_workers: int, nb_chunks_sent: int) -> None:

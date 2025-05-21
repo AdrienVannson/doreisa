@@ -1,6 +1,7 @@
+import time
+
 import execo
 import execo_g5k
-import time
 
 JOB_ID, SITE = ..., ...
 
