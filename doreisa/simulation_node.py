@@ -72,6 +72,7 @@ class Client:
             array_name,
             self.timestep,
             chunk_position,
+            chunk.dtype,
             nb_chunks_per_dim,
             nb_chunks_of_node,
             [ref],

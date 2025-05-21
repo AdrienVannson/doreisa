@@ -2,6 +2,7 @@ import asyncio
 import pickle
 from dataclasses import dataclass
 
+import numpy as np
 import ray
 import ray.actor
 import ray.util.dask.scheduler
@@ -44,6 +45,7 @@ class ChunkReadyInfo:
     # Information about the array
     array_name: str
     timestep: Timestep
+    dtype: np.dtype
     nb_chunks_per_dim: tuple[int, ...]
 
     # Information about the chunk
@@ -129,6 +131,7 @@ class SchedulingActor:
         array_name: str,
         timestep: int,
         chunk_position: tuple[int, ...],
+        dtype: np.dtype,
         nb_chunks_per_dim: tuple[int, ...],
         nb_chunks_of_node: int,
         chunk: list[ray.ObjectRef],
@@ -145,6 +148,7 @@ class SchedulingActor:
             ChunkReadyInfo(
                 array_name=array_name,
                 timestep=timestep,
+                dtype=dtype,
                 nb_chunks_per_dim=nb_chunks_per_dim,
                 position=chunk_position,
                 size=chunk_shape,

@@ -49,6 +49,9 @@ class _DaskArrayData:
         # For each dimension, the size of the chunks in this dimension
         self.chunks_size: list[list[int | None]] | None = None
 
+        # Type of the numpy arrays
+        self.dtype: np.dtype | None = None
+
         # ID of the scheduling actor in charge of the chunk at each position
         self.scheduling_actors_id: dict[tuple[int, ...], int] = {}
 
@@ -64,6 +67,7 @@ class _DaskArrayData:
         self,
         size: tuple[int, ...],
         position: tuple[int, ...],
+        dtype: np.dtype,
         nb_chunks_per_dim: tuple[int, ...],
         scheduling_actor_id: int,
     ) -> bool:
@@ -77,9 +81,11 @@ class _DaskArrayData:
             self.nb_chunks_per_dim = nb_chunks_per_dim
             self.nb_chunks = math.prod(nb_chunks_per_dim)
 
+            self.dtype = dtype
             self.chunks_size = [[None for _ in range(n)] for n in nb_chunks_per_dim]
         else:
             assert self.nb_chunks_per_dim == nb_chunks_per_dim
+            assert self.dtype == dtype
             assert self.chunks_size is not None
 
         for pos, nb_chunks in zip(position, nb_chunks_per_dim):
@@ -128,7 +134,7 @@ class _DaskArrayData:
             dsk,
             dask_name,
             chunks=self.chunks_size,
-            dtype=np.float64,  # TODO: Use the right dtype
+            dtype=self.dtype,
         )
 
         return full_array
@@ -273,7 +279,9 @@ class SimulationHead:
             if it == 0:
                 array.add_chunk_ref(all_chunks_ref[0])
 
-            is_ready = array.add_chunk(chunk.size, chunk.position, chunk.nb_chunks_per_dim, scheduling_actor_id)
+            is_ready = array.add_chunk(
+                chunk.size, chunk.position, chunk.dtype, chunk.nb_chunks_per_dim, scheduling_actor_id
+            )
 
             if is_ready:
                 self.arrays_ready.put_nowait(

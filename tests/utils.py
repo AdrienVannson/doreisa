@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 import pytest
 import ray
 
@@ -32,15 +33,14 @@ def simple_worker(
     chunk_size: tuple[int, ...],
     nb_iterations: int,
     node_id: str | None = None,
+    dtype: np.dtype = np.int32,  # type: ignore
 ) -> None:
     """Worker node sending chunks of data"""
-    import numpy as np
-
     from doreisa.simulation_node import Client
 
     client = Client(_fake_node_id=node_id)
 
-    array = (rank + 1) * np.ones(chunk_size, dtype=np.int32)
+    array = (rank + 1) * np.ones(chunk_size, dtype=dtype)
 
     for i in range(nb_iterations):
         client.add_chunk("array", position, chunks_per_dim, nb_chunks_of_node, i * array, store_externally=False)
