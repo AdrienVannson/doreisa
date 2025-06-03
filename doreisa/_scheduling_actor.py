@@ -105,6 +105,8 @@ class SchedulingActor:
 
     def __init__(self, actor_id: int) -> None:
         self.actor_id = actor_id
+        self.actor_handle = ray.get_runtime_context().current_actor
+
         self.head = ray.get_actor("simulation_head", namespace="doreisa")
         self.scheduling_actors: list[ray.actor.ActorHandle] = []
 
@@ -126,6 +128,16 @@ class SchedulingActor:
     def ready(self) -> None:
         pass
 
+    def _pack_object_ref(self, refs: list[ray.ObjectRef]):
+        """
+        Used to create an ObjectRef containing the given ObjectRef.
+        This allows having the expected format in the task graph.
+
+        This is a method instead of a function with `num_cpus=0` to avoid starting many
+        new workers.
+        """
+        return refs[0]
+
     async def add_chunk(
         self,
         array_name: str,
@@ -138,7 +150,8 @@ class SchedulingActor:
         chunk_shape: tuple[int, ...],
     ) -> None:
         assert (array_name, timestep, chunk_position) not in self.local_chunks
-        self.local_chunks[(array_name, timestep, chunk_position)] = chunk[0]
+
+        self.local_chunks[(array_name, timestep, chunk_position)] = self.actor_handle._pack_object_ref.remote(chunk)
 
         if array_name not in self.chunks_info:
             self.chunks_info[array_name] = []

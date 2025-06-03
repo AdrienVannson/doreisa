@@ -5,13 +5,6 @@ import ray
 import ray.actor
 
 
-@ray.remote(num_cpus=0, enable_task_events=False)
-def _pack_object_ref(refs: list[ray.ObjectRef]):
-    # This function is used to create an ObjectRef containing the given ObjectRef.
-    # This allows having the expected format in the task graph.
-    return refs[0]
-
-
 class Client:
     """
     Used by the MPI nodes to send data to the analytic cluster.
@@ -66,7 +59,6 @@ class Client:
         # TODO add a test to check that _owner allows the script to terminate without loosing the ref
         # ref = ray.put(chunk, _owner=self.scheduling_actor)
         ref = ray.put(chunk)
-        ref = _pack_object_ref.remote([ref])
 
         future: ray.ObjectRef = self.scheduling_actor.add_chunk.options(enable_task_events=False).remote(
             array_name,
