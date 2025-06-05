@@ -187,7 +187,7 @@ class SchedulingActor:
         else:
             await self.chunks_ready_event.wait()
 
-    async def do_nothing(self, dsk):
+    async def do_nothing(self, dsk: dict, graph_id: int, scheduling: dict[str, int]):
         return 42
 
     async def schedule_graph(self, dsk: dict, graph_id: int, scheduling: dict[str, int]):
