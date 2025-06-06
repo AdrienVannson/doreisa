@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 import numpy as np
@@ -20,7 +21,7 @@ class Client:
                 This is useful for testing with several scheduling actors on a single machine.
         """
         if not ray.is_initialized():
-            ray.init(address="auto")
+            ray.init(address="auto", log_to_driver=False, logging_level=logging.ERROR)
 
         self.node_id = _fake_node_id or ray.get_runtime_context().get_node_id()
 

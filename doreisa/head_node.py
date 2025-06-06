@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import math
 from dataclasses import dataclass
 from typing import Callable
@@ -18,7 +19,7 @@ from doreisa._scheduling_actor import ChunkReadyInfo, ChunkRef, SchedulingActor
 
 def init():
     if not ray.is_initialized():
-        ray.init(address="auto")
+        ray.init(address="auto", log_to_driver=False, logging_level=logging.ERROR)
 
     dask.config.set(scheduler=doreisa_get, shuffle="tasks")
 
