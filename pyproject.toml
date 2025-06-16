@@ -2,34 +2,32 @@
 name = "doreisa"
 version = "0.1.2"
 description = ""
-authors = [
-    {name = "Adrien Vannson",email = "adrien.vannson@protonmail.com"}
-]
-readme = "README.md"
+authors = [{ name = "Adrien Vannson", email = "adrien.vannson@protonmail.com" }]
 requires-python = ">=3.11"
+readme = "README.md"
 dependencies = [
     "dask[dataframe] (==2024.6.0)",
     "ray[default] (>=2.46.0,<3.0.0)",
-    # "ray[default] (==2.37.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "ipywidgets (>=8.1.5,<9.0.0)",
     "jinja2 (>=3.1.5,<4.0.0)",
     "graphviz (>=0.20.3,<0.21.0)",
     "matplotlib (>=3.10.0,<4.0.0)",
     "numpy (==1.26.4)",
-    "pyright (>=1.1.397,<2.0.0)"
+    "pyright (>=1.1.397,<2.0.0)",
 ]
 
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.9.7"
-poethepoet = "^0.32.2"
-pytest = "^8.3.5"
-pre-commit = "^4.2.0"
+[dependency-groups]
+dev = [
+    "ruff>=0.9.7,<0.10",
+    "poethepoet>=0.32.2,<0.33",
+    "pytest>=8.3.5,<9",
+    "pre-commit>=4.2.0,<5",
+]
 
 [tool.ruff]
 line-length = 120
