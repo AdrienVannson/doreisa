@@ -8,9 +8,6 @@ from doreisa._scheduling_actor import ChunkRef
 
 
 def doreisa_get(dsk, keys, **kwargs):
-    # The graph may be a HighLevelGraph
-    dsk = dict(dsk)
-
     # Sort the graph by keys to make scheduling deterministic
     dsk = {k: v for k, v in sorted(dsk.items())}
 
