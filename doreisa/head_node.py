@@ -141,11 +141,6 @@ class _DaskArrayData:
         return full_array
 
 
-@dask.delayed
-def ray_to_dask(x):
-    return x
-
-
 def get_head_actor_options() -> dict:
     """Return the options that should be used to start the head actor."""
     return dict(
