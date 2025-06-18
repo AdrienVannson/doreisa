@@ -3,7 +3,7 @@ name = "doreisa"
 version = "0.1.4"
 description = ""
 authors = [{ name = "Adrien Vannson", email = "adrien.vannson@protonmail.com" }]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 readme = "README.md"
 dependencies = [
     "dask[dataframe] (==2024.6.0)",
