@@ -27,6 +27,8 @@ dev = [
     "poethepoet>=0.32.2,<0.33",
     "pytest>=8.3.5,<9",
     "pre-commit>=4.2.0,<5",
+    "mkdocs-material>=9.6.14",
+    "mkdocstrings[python]>=0.29.1",
 ]
 
 [tool.ruff]
@@ -43,3 +45,7 @@ _sort-imports = "ruff check --select I --fix"
 [tool.poe.tasks.format]
 sequence = ["_format", "_sort-imports"]
 help = "Format the source code, and sort the imports"
+
+[tool.poe.tasks.serve-docs]
+cmd = "mkdocs serve"
+help = "Serve the documentation locally"
