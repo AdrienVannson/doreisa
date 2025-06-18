@@ -23,7 +23,7 @@ def wait_for_head_node() -> None:
             time.sleep(0.1)
 
 
-@ray.remote
+@ray.remote(num_cpus=0)
 def simple_worker(
     *,
     rank: int,
@@ -33,6 +33,7 @@ def simple_worker(
     chunk_size: tuple[int, ...],
     nb_iterations: int,
     node_id: str | None = None,
+    array_name: str = "array",
     dtype: np.dtype = np.int32,  # type: ignore
 ) -> None:
     """Worker node sending chunks of data"""
@@ -43,4 +44,4 @@ def simple_worker(
     array = (rank + 1) * np.ones(chunk_size, dtype=dtype)
 
     for i in range(nb_iterations):
-        client.add_chunk("array", position, chunks_per_dim, nb_chunks_of_node, i * array, store_externally=False)
+        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_node, i * array, store_externally=False)

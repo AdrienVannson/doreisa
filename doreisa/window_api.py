@@ -23,41 +23,49 @@ def run_simulation(
     head_arrays_description = [
         HeadArrayDefinition(name=definition.name, preprocess=definition.preprocess) for definition in arrays_description
     ]
-    windows_size = {definition.name: definition.window_size for definition in arrays_description}
 
     # Limit the advance the simulation can have over the analytics
     max_pending_arrays = 2 * len(arrays_description)
 
     head: Any = SimulationHead.options(**get_head_actor_options()).remote(head_arrays_description, max_pending_arrays)
 
-    # The array values needed for the analytics
-    # Each list contains the arrays for several timesteps:
-    #   - The list will be shorter than the window size during the first iterations
-    #   - The list may be longer than the window size if the array are not produced in order
-    all_arrays: dict[str, list[da.Array]] = {description.name: [] for description in arrays_description}
+    arrays_by_iteration: dict[int, dict[str, da.Array]] = {}
 
     for iteration in range(max_iterations):
         # Get new arrays
-        while any(len(array) < min(windows_size[name], iteration + 1) for name, array in all_arrays.items()):
+        while len(arrays_by_iteration.get(iteration, {})) < len(arrays_description):
             name: str
             timestep: int
             array: da.Array
             name, timestep, array = ray.get(head.get_next_array.remote())
 
-            all_arrays[name].append(array)
+            if timestep not in arrays_by_iteration:
+                arrays_by_iteration[timestep] = {}
 
-        # Remove the most recent arrays if we received them in advanced
-        all_arrays_cropped = {name: arrays[: windows_size[name]] for name, arrays in all_arrays.items()}
+            assert name not in arrays_by_iteration[timestep]
+            arrays_by_iteration[timestep][name] = array
 
-        # TODO check that the arrays were indeed produced at the same timestep
-        # TODO using the last timestep might be wrong
+        # Compute the arrays to pass to the callback
+        all_arrays: dict[str, list[da.Array]] = {}
 
-        simulation_callback(**all_arrays_cropped, timestep=timestep)
+        for description in arrays_description:
+            all_arrays[description.name] = [
+                arrays_by_iteration[timestep][description.name]
+                for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
+            ]
+
+        simulation_callback(**all_arrays, timestep=timestep)
+
+        del all_arrays
 
         # Remove the oldest arrays
-        for name, arrays in all_arrays.items():
-            if len(arrays) >= windows_size[name]:
-                arrays.pop(0)
+        for description in arrays_description:
+            older_timestep = iteration - description.window_size + 1
+            if older_timestep >= 0:
+                del arrays_by_iteration[older_timestep][description.name]
+
+                if not arrays_by_iteration[older_timestep]:
+                    del arrays_by_iteration[older_timestep]
 
         # Free the memory used by the arrays now. Since an ObjectRef is a small object,
         # Python may otherwise choose to keep it in memory for some time, preventing the
