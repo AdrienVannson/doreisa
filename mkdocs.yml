@@ -1,0 +1,28 @@
+site_name: Doreisa
+# site_url: ...
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: deep purple
+
+nav:
+  - index.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
