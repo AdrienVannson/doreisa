@@ -226,8 +226,7 @@ class SimulationHead:
                     enable_task_events=False,
                 ).remote(actor_id)
 
-            await self.scheduling_actors[node_id].ready.remote()  # type: ignore
-
+        await self.scheduling_actors[node_id].ready.remote()  # type: ignore
         return self.scheduling_actors[node_id]
 
     def preprocessing_callbacks(self) -> dict[str, Callable]:
