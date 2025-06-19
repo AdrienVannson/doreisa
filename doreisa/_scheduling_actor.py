@@ -234,6 +234,12 @@ class SchedulingActor:
         info.scheduled_event.set()
 
     async def get_value(self, graph_id: int, key: str):
+        with open(
+            f"/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/{self.actor_id}.txt",
+            "a",
+        ) as f:
+            f.write(f"get_value({graph_id}, {key})\n")
+
         while graph_id not in self.graph_infos:
             await self.new_graph_available.wait()
 
