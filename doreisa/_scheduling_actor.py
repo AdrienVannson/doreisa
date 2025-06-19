@@ -124,6 +124,7 @@ class SchedulingActor:
         # For scheduling
         self.new_graph_available = asyncio.Event()
         self.graph_infos: dict[int, GraphInfo] = {}
+        self.partitionned_graphs: dict[int, tuple[dict, dict[str, int]]] = {}
 
     def ready(self) -> None:
         pass
@@ -187,7 +188,19 @@ class SchedulingActor:
         else:
             await self.chunks_ready_event.wait()
 
-    async def schedule_graph(self, dsk: dict, graph_id: int, scheduling: dict[str, int]):
+    def store_graph(self, graph_id: int, dsk: dict, scheduling: dict[str, int]) -> None:
+        """
+        Store the given graph in the actor until `schedule_graph` is called.
+
+        This allows measuring precisely the time it takes to send the graph to all the
+        actors. If needed, this will be optimized using an efficient communication
+        method.
+        """
+        self.partitionned_graphs[graph_id] = (dsk, scheduling)
+
+    async def schedule_graph(self, graph_id: int):
+        dsk, scheduling = self.partitionned_graphs.pop(graph_id)
+
         # Find the scheduling actors
         if not self.scheduling_actors:
             self.scheduling_actors = await self.head.list_scheduling_actors.options(enable_task_events=False).remote()

@@ -1,4 +1,5 @@
 import random
+import time
 from collections import Counter
 
 import ray
@@ -8,6 +9,15 @@ from doreisa._scheduling_actor import ChunkRef
 
 
 def doreisa_get(dsk, keys, **kwargs):
+    debug_logs_path: str | None = kwargs.get("doreisa_debug_logs", None)
+
+    def log(message: str, debug_logs_path: str | None) -> None:
+        if debug_logs_path is not None:
+            with open(debug_logs_path, "a") as f:
+                f.write(f"{time.time()} {message}\n")
+
+    log("1. Begin Doreisa scheduler", debug_logs_path)
+
     # Sort the graph by keys to make scheduling deterministic
     dsk = {k: v for k, v in sorted(dsk.items())}
 
@@ -75,20 +85,35 @@ def doreisa_get(dsk, keys, **kwargs):
 
     explore(key)
 
+    log("2. Graph partitionning done", debug_logs_path)
+
     # Pass the scheduling to the scheduling actors
     dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
+
+    log("3. Graph put in object store", debug_logs_path)
 
     graph_id = random.randint(0, 2**128 - 1)
 
     ray.get(
         [
-            scheduling_actors[i]
-            .schedule_graph.options(enable_task_events=False)
-            .remote(dsk_ref, graph_id, scheduling_ref)
+            scheduling_actors[i].store_graph.options(enable_task_events=False).remote(graph_id, dsk_ref, scheduling_ref)
             for i in range(len(scheduling_actors))
         ]
     )
 
-    res = scheduling_actors[scheduling[key]].get_value.remote(graph_id, key)
+    log("4. Partitionned graph sent", debug_logs_path)
 
-    return [[ray.get(ray.get(res))]]
+    ray.get(
+        [
+            scheduling_actors[i].schedule_graph.options(enable_task_events=False).remote(graph_id)
+            for i in range(len(scheduling_actors))
+        ]
+    )
+
+    log("5. Graph scheduled", debug_logs_path)
+
+    res = ray.get(ray.get(scheduling_actors[scheduling[key]].get_value.remote(graph_id, key)))
+
+    log("6. End Doreisa scheduler", debug_logs_path)
+
+    return [[res]]
