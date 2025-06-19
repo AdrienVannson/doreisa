@@ -44,4 +44,4 @@ def simple_worker(
     array = (rank + 1) * np.ones(chunk_size, dtype=dtype)
 
     for i in range(nb_iterations):
-        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_node, i * array, store_externally=False)
+        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_node, i, i * array, store_externally=False)
