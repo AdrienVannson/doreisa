@@ -30,6 +30,15 @@ class ChunkRef:
     _all_chunks: ray.ObjectRef | None = None
 
 
+@dataclass
+class ScheduledByOtherActor:
+    """
+    Represents a task that is scheduled by another actor in the part of the task graph sent to an actor.
+    """
+
+    actor_id: int
+
+
 class GraphInfo:
     """
     Information about graphs and their scheduling.
@@ -124,7 +133,7 @@ class SchedulingActor:
         # For scheduling
         self.new_graph_available = asyncio.Event()
         self.graph_infos: dict[int, GraphInfo] = {}
-        self.partitionned_graphs: dict[int, tuple[dict, dict[str, int]]] = {}
+        self.partitionned_graphs: dict[int, dict] = {}
 
     def ready(self) -> None:
         pass
@@ -188,7 +197,7 @@ class SchedulingActor:
         else:
             await self.chunks_ready_event.wait()
 
-    def store_graph(self, graph_id: int, dsk: dict, scheduling: dict[str, int]) -> None:
+    def store_graph(self, graph_id: int, dsk: dict) -> None:
         """
         Store the given graph in the actor until `schedule_graph` is called.
 
@@ -196,10 +205,10 @@ class SchedulingActor:
         actors. If needed, this will be optimized using an efficient communication
         method.
         """
-        self.partitionned_graphs[graph_id] = (dsk, scheduling)
+        self.partitionned_graphs[graph_id] = dsk
 
     async def schedule_graph(self, graph_id: int):
-        dsk, scheduling = self.partitionned_graphs.pop(graph_id)
+        dsk = self.partitionned_graphs.pop(graph_id)
 
         # Find the scheduling actors
         if not self.scheduling_actors:
@@ -210,22 +219,13 @@ class SchedulingActor:
         self.new_graph_available.set()
         self.new_graph_available.clear()
 
-        local_keys = {k for k in dsk if scheduling[k] == self.actor_id}
-
-        dependency_keys: set[str] = {dep for k in local_keys for dep in get_dependencies(dsk, k)}  # type: ignore[assignment]
-
-        external_keys = dependency_keys - local_keys
-
-        # Filter the dask array
-        dsk = {k: v for k, v in dsk.items() if k in local_keys}
-
-        # Adapt external keys
-        for k in external_keys:
-            actor = self.scheduling_actors[scheduling[k]]
-            dsk[k] = actor.get_value.options(enable_task_events=False).remote(graph_id, k)
-
-        # Replace the false chunks by the real ObjectRefs
         for key, val in dsk.items():
+            # Adapt external keys
+            if isinstance(val, ScheduledByOtherActor):
+                actor = self.scheduling_actors[val.actor_id]
+                dsk[key] = actor.get_value.options(enable_task_events=False).remote(graph_id, key)
+
+            # Replace the false chunks by the real ObjectRefs
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
@@ -234,7 +234,7 @@ class SchedulingActor:
                 dsk[key] = pickle.loads(encoded_ref)
 
         # We will need the ObjectRefs of these keys
-        keys_needed = list(local_keys - dependency_keys)
+        keys_needed = list(dsk.keys())
 
         refs = await remote_ray_dask_get.remote(dsk, keys_needed)
 
