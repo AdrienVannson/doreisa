@@ -6,7 +6,6 @@ import numpy as np
 import ray
 import ray.actor
 import ray.util.dask.scheduler
-from dask.core import get_dependencies
 
 from doreisa import Timestep
 

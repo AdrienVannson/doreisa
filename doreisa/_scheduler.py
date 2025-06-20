@@ -92,7 +92,7 @@ def doreisa_get(dsk, keys, **kwargs):
     for k, v in dsk.items():
         actor_id = partition[k]
 
-        if not actor_id in partitionned_graphs:
+        if actor_id not in partitionned_graphs:
             partitionned_graphs[actor_id] = {}
 
         partitionned_graphs[actor_id][k] = v
