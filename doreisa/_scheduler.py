@@ -5,7 +5,7 @@ from collections import Counter
 import ray
 from dask.core import get_dependencies
 
-from doreisa._scheduling_actor import ChunkRef
+from doreisa._scheduling_actor import ChunkRef, ScheduledByOtherActor
 
 
 def doreisa_get(dsk, keys, **kwargs):
@@ -32,7 +32,7 @@ def doreisa_get(dsk, keys, **kwargs):
 
     # Find a not too bad scheduling strategy
     # Good scheduling in a tree
-    scheduling = {k: -1 for k in dsk.keys()}
+    partition = {k: -1 for k in dsk.keys()}
 
     # def explore(key, v: int):
     #     # Only works for trees for now
@@ -76,32 +76,43 @@ def doreisa_get(dsk, keys, **kwargs):
         val = dsk[k]
 
         if isinstance(val, ChunkRef):
-            scheduling[k] = val.actor_id
+            partition[k] = val.actor_id
         else:
             res = [explore(dep) for dep in get_dependencies(dsk, k)]
-            scheduling[k] = Counter(res).most_common(1)[0][0]
+            partition[k] = Counter(res).most_common(1)[0][0]
 
-        return scheduling[k]
+        return partition[k]
 
     explore(key)
 
     log("2. Graph partitionning done", debug_logs_path)
 
-    # Pass the scheduling to the scheduling actors
-    dsk_ref, scheduling_ref = ray.put(dsk), ray.put(scheduling)  # noqa: F841
+    partitionned_graphs: dict[int, dict] = {}
 
-    log("3. Graph put in object store", debug_logs_path)
+    for k, v in dsk.items():
+        actor_id = partition[k]
+
+        if actor_id not in partitionned_graphs:
+            partitionned_graphs[actor_id] = {}
+
+        partitionned_graphs[actor_id][k] = v
+
+        for dep in get_dependencies(dsk, k):
+            if partition[dep] != actor_id:
+                partitionned_graphs[actor_id][dep] = ScheduledByOtherActor(partition[dep])
+
+    log("3. Partitionned graphs created", debug_logs_path)
 
     graph_id = random.randint(0, 2**128 - 1)
 
     ray.get(
         [
-            scheduling_actors[i].store_graph.options(enable_task_events=False).remote(graph_id, dsk_ref, scheduling_ref)
-            for i in range(len(scheduling_actors))
+            actor.store_graph.options(enable_task_events=False).remote(graph_id, partitionned_graphs[id])
+            for id, actor in enumerate(scheduling_actors)
         ]
     )
 
-    log("4. Partitionned graph sent", debug_logs_path)
+    log("4. Partitionned graphs sent", debug_logs_path)
 
     ray.get(
         [
@@ -112,7 +123,7 @@ def doreisa_get(dsk, keys, **kwargs):
 
     log("5. Graph scheduled", debug_logs_path)
 
-    res = ray.get(ray.get(scheduling_actors[scheduling[key]].get_value.remote(graph_id, key)))
+    res = ray.get(ray.get(scheduling_actors[partition[key]].get_value.remote(graph_id, key)))
 
     log("6. End Doreisa scheduler", debug_logs_path)
 
