@@ -48,19 +48,6 @@ class GraphInfo:
         self.refs: dict[str, ray.ObjectRef] = {}
 
 
-@dataclass
-class ChunkReadyInfo:
-    # Information about the array
-    array_name: str
-    timestep: Timestep
-    dtype: np.dtype
-    nb_chunks_per_dim: tuple[int, ...]
-
-    # Information about the chunk
-    position: tuple[int, ...]
-    size: tuple[int, ...]
-
-
 @ray.remote(num_cpus=0, enable_task_events=False)
 def patched_dask_task_wrapper(func, repack, key, ray_pretask_cbs, ray_posttask_cbs, *args, first_call=True):
     """
@@ -105,6 +92,27 @@ def remote_ray_dask_get(dsk, keys):
     return ray.util.dask.ray_dask_get(dsk, keys, ray_persist=True)
 
 
+class _ArrayTimestep:
+    def __init__(self):
+        # Triggered when all the chunks are ready
+        self.chunks_ready_event: asyncio.Event = asyncio.Event()
+
+        # {position: chunk}
+        self.local_chunks: dict[tuple[int, ...], ray.ObjectRef | bytes] = {}
+
+
+class _Array:
+    def __init__(self):
+        # Indicates if set_owned_chunks method has been called for this array.
+        self.is_registered = False
+
+        # Chunks owned by this actor for this array.
+        # {(chunk position, chunk size), ...}
+        self.owned_chunks: set[tuple[tuple[int, ...], tuple[int, ...]]] = set()
+
+        self.timesteps: dict[Timestep, _ArrayTimestep] = {}
+
+
 @ray.remote
 class SchedulingActor:
     """
@@ -119,15 +127,7 @@ class SchedulingActor:
         self.scheduling_actors: list[ray.actor.ActorHandle] = []
 
         # For collecting chunks
-
-        # Triggered when all the chunks are ready
-        self.chunks_ready_event = asyncio.Event()
-
-        self.chunks_info: dict[str, list[ChunkReadyInfo]] = {}
-
-        # (dask_array_name, position) -> chunk
-        # The Dask array name contains the timestep
-        self.local_chunks: dict[tuple[str, Timestep, tuple[int, ...]], ray.ObjectRef | bytes] = {}
+        self.arrays: dict[str, _Array] = {}
 
         # For scheduling
         self.new_graph_available = asyncio.Event()
@@ -158,43 +158,48 @@ class SchedulingActor:
         chunk: list[ray.ObjectRef],
         chunk_shape: tuple[int, ...],
     ) -> None:
-        assert (array_name, timestep, chunk_position) not in self.local_chunks
+        if array_name not in self.arrays:
+            self.arrays[array_name] = _Array()
+        array = self.arrays[array_name]
 
-        self.local_chunks[(array_name, timestep, chunk_position)] = self.actor_handle._pack_object_ref.remote(chunk)
+        if timestep not in array.timesteps:
+            array.timesteps[timestep] = _ArrayTimestep()
+        array_timestep = array.timesteps[timestep]
 
-        if array_name not in self.chunks_info:
-            self.chunks_info[array_name] = []
-        chunks_info = self.chunks_info[array_name]
+        assert chunk_position not in array_timestep.local_chunks
+        array_timestep.local_chunks[chunk_position] = self.actor_handle._pack_object_ref.remote(chunk)
 
-        chunks_info.append(
-            ChunkReadyInfo(
-                array_name=array_name,
-                timestep=timestep,
-                dtype=dtype,
-                nb_chunks_per_dim=nb_chunks_per_dim,
-                position=chunk_position,
-                size=chunk_shape,
-            )
-        )
+        array.owned_chunks.add((chunk_position, chunk_shape))
 
-        if len(chunks_info) == nb_chunks_of_node:
+        if len(array_timestep.local_chunks) == nb_chunks_of_node:
+            if not array.is_registered:
+                # Register the array with the head node
+                await self.head.set_owned_chunks.options(enable_task_events=False).remote(
+                    self.actor_id,
+                    array_name,
+                    dtype,
+                    nb_chunks_per_dim,
+                    list(array.owned_chunks),
+                )
+                array.is_registered = True
+
             chunks = []
-            for info in chunks_info:
-                c = self.local_chunks[(info.array_name, info.timestep, info.position)]
+            for position, size in array.owned_chunks:
+                c = array_timestep.local_chunks[position]
                 assert isinstance(c, ray.ObjectRef)
                 chunks.append(c)
-                self.local_chunks[(info.array_name, info.timestep, info.position)] = pickle.dumps(c)
+                array_timestep.local_chunks[position] = pickle.dumps(c)
 
             all_chunks_ref = ray.put(chunks)
 
             await self.head.chunks_ready.options(enable_task_events=False).remote(
-                chunks_info, self.actor_id, [all_chunks_ref]
+                array_name, timestep, [all_chunks_ref]
             )
-            self.chunks_info[array_name] = []
-            self.chunks_ready_event.set()
-            self.chunks_ready_event.clear()
+
+            array_timestep.chunks_ready_event.set()
+            array_timestep.chunks_ready_event.clear()
         else:
-            await self.chunks_ready_event.wait()
+            await array_timestep.chunks_ready_event.wait()
 
     def store_graph(self, graph_id: int, dsk: dict) -> None:
         """
@@ -228,7 +233,7 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                encoded_ref = self.local_chunks[(val.array_name, val.timestep, val.position)]
+                encoded_ref = self.arrays[val.array_name].timesteps[val.timestep].local_chunks[val.position]
                 assert isinstance(encoded_ref, bytes)
                 dsk[key] = pickle.loads(encoded_ref)
 

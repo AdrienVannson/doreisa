@@ -14,7 +14,7 @@ from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
 from doreisa import Timestep
 from doreisa._scheduler import doreisa_get
-from doreisa._scheduling_actor import ChunkReadyInfo, ChunkRef, SchedulingActor
+from doreisa._scheduling_actor import ChunkRef, SchedulingActor
 
 
 def init():
@@ -39,9 +39,8 @@ class _DaskArrayData:
     Information about a Dask array being built.
     """
 
-    def __init__(self, definition: ArrayDefinition, timestep: Timestep) -> None:
+    def __init__(self, definition: ArrayDefinition) -> None:
         self.definition = definition
-        self.timestep = timestep
 
         # This will be set when the first chunk is added
         self.nb_chunks_per_dim: tuple[int, ...] | None = None
@@ -56,28 +55,25 @@ class _DaskArrayData:
         # ID of the scheduling actor in charge of the chunk at each position
         self.scheduling_actors_id: dict[tuple[int, ...], int] = {}
 
+        # Number of scheduling actors owning chunks of this array.
+        self.nb_scheduling_actors: int | None = None
+
         # Each reference comes from one scheduling actor. The reference a list of
         # ObjectRefs, each ObjectRef corresponding to a chunk. These references
         # shouldn't be used directly. They exists only to release the memory
         # automatically.
         # When the array is buit, these references are put in the object store, and the
         # global reference is added to the Dask graph. Then, the list is cleared.
-        self.chunk_refs: list[ray.ObjectRef] = []
+        self.chunk_refs: dict[Timestep, list[ray.ObjectRef]] = {}
 
-    def add_chunk(
+    def set_chunk_owner(
         self,
-        size: tuple[int, ...],
-        position: tuple[int, ...],
-        dtype: np.dtype,
         nb_chunks_per_dim: tuple[int, ...],
+        dtype: np.dtype,
+        position: tuple[int, ...],
+        size: tuple[int, ...],
         scheduling_actor_id: int,
-    ) -> bool:
-        """
-        Add a chunk to the array.
-
-        Return:
-            True if the array is ready, False otherwise.
-        """
+    ) -> None:
         if self.nb_chunks_per_dim is None:
             self.nb_chunks_per_dim = nb_chunks_per_dim
             self.nb_chunks = math.prod(nb_chunks_per_dim)
@@ -100,31 +96,43 @@ class _DaskArrayData:
             else:
                 assert self.chunks_size[d][position[d]] == size[d]
 
-        if len(self.scheduling_actors_id) == self.nb_chunks:  # The array is ready
-            return True
-        return False
+    def add_chunk_ref(self, chunk_ref: ray.ObjectRef, timestep: Timestep) -> bool:
+        """
+        Add a reference sent by a scheduling actor.
 
-    def add_chunk_ref(self, chunk_ref: ray.ObjectRef) -> None:
-        self.chunk_refs.append(chunk_ref)
+        Return:
+            True if all the chunks for this timestep are ready, False otherwise.
+        """
+        self.chunk_refs[timestep].append(chunk_ref)
 
-    def get_full_array(self) -> da.Array:
+        # We don't know all the owners yet
+        if len(self.scheduling_actors_id) != self.nb_chunks:
+            return False
+
+        if self.nb_scheduling_actors is None:
+            self.nb_scheduling_actors = len(set(self.scheduling_actors_id.values()))
+
+        return len(self.chunk_refs[timestep]) == self.nb_scheduling_actors
+
+    def get_full_array(self, timestep: Timestep) -> da.Array:
         """
         Return the full Dask array.
         """
         assert len(self.scheduling_actors_id) == self.nb_chunks
         assert self.nb_chunks is not None and self.nb_chunks_per_dim is not None
 
-        all_chunks = ray.put(self.chunk_refs)
+        all_chunks = ray.put(self.chunk_refs[timestep])
+        del self.chunk_refs[timestep]
 
         # We need to add the timestep since the same name can be used several times for different
         # timesteps
-        dask_name = f"{self.definition.name}_{self.timestep}"
+        dask_name = f"{self.definition.name}_{timestep}"
 
         graph = {
             # We need to repeat the name and position in the value since the key might be removed
             # by the Dask optimizer
             (dask_name,) + position: ChunkRef(
-                actor_id, self.definition.name, self.timestep, position, _all_chunks=all_chunks if it == 0 else None
+                actor_id, self.definition.name, timestep, position, _all_chunks=all_chunks if it == 0 else None
             )
             for it, (position, actor_id) in enumerate(self.scheduling_actors_id.items())
         }
@@ -177,21 +185,18 @@ class SimulationHead:
         # For each ID of a simulation node, the corresponding scheduling actor
         self.scheduling_actors: dict[str, ray.actor.ActorHandle] = {}
 
-        self.arrays_definition: dict[str, ArrayDefinition] = {
-            definition.name: definition for definition in arrays_definitions
-        }
-
-        # Must be used before creating a new array
+        # Must be used before creating a new array, to prevent the simulation from being
+        # too many iterations in advance of the analytics.
         self.new_pending_array_semaphore = asyncio.Semaphore(max_pending_arrays)
 
-        # Triggered when a new array is added to self.arrays
         self.new_array_created = asyncio.Event()
 
-        # Arrays beeing built
-        self.arrays: dict[tuple[str, Timestep], _DaskArrayData] = {}
+        self.arrays: dict[str, _DaskArrayData] = {
+            definition.name: _DaskArrayData(definition) for definition in arrays_definitions
+        }
 
         # All the newly created arrays
-        self.arrays_ready: asyncio.Queue[tuple[str, int, da.Array]] = asyncio.Queue()
+        self.arrays_ready: asyncio.Queue[tuple[str, Timestep, da.Array]] = asyncio.Queue()
 
     def list_scheduling_actors(self) -> list[ray.actor.ActorHandle]:
         """
@@ -233,11 +238,22 @@ class SimulationHead:
         """
         Return the preprocessing callbacks for each array.
         """
-        return {name: definition.preprocess for name, definition in self.arrays_definition.items()}
+        return {name: array.definition.preprocess for name, array in self.arrays.items()}
 
-    async def chunks_ready(
-        self, chunks: list[ChunkReadyInfo], scheduling_actor_id: int, all_chunks_ref: list[ray.ObjectRef]
-    ) -> None:
+    def set_owned_chunks(
+        self,
+        scheduling_actor_id: int,
+        array_name: str,
+        dtype: np.dtype,
+        nb_chunks_per_dim: tuple[int, ...],
+        chunks: list[tuple[tuple[int, ...], tuple[int, ...]]],  # [(chunk position, chunk size), ...]
+    ):
+        array = self.arrays[array_name]
+
+        for position, size in chunks:
+            array.set_chunk_owner(nb_chunks_per_dim, dtype, position, size, scheduling_actor_id)
+
+    async def chunks_ready(self, array_name: str, timestep: Timestep, all_chunks_ref: list[ray.ObjectRef]) -> None:
         """
         Called by the scheduling actors to inform the head actor that the chunks are ready.
         The chunks are not sent.
@@ -246,49 +262,39 @@ class SimulationHead:
             chunks: Information about the chunks that are ready.
             source_actor: Handle to the scheduling actor owning the chunks.
         """
-        for it, chunk in enumerate(chunks):
-            while (chunk.array_name, chunk.timestep) not in self.arrays:
-                t1 = asyncio.create_task(self.new_pending_array_semaphore.acquire())
-                t2 = asyncio.create_task(self.new_array_created.wait())
+        array = self.arrays[array_name]
 
-                done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
+        while timestep not in array.chunk_refs:
+            t1 = asyncio.create_task(self.new_pending_array_semaphore.acquire())
+            t2 = asyncio.create_task(self.new_array_created.wait())
 
-                for task in pending:
-                    task.cancel()
+            done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
 
-                if t1 in done:
-                    if (chunk.array_name, chunk.timestep) in self.arrays:
-                        # The array was already created by another scheduling actor
-                        self.new_pending_array_semaphore.release()
-                    else:
-                        self.arrays[(chunk.array_name, chunk.timestep)] = _DaskArrayData(
-                            self.arrays_definition[chunk.array_name], chunk.timestep
-                        )
+            for task in pending:
+                task.cancel()
 
-                        self.new_array_created.set()
-                        self.new_array_created.clear()
+            if t1 in done:
+                if timestep in array.chunk_refs:
+                    # The array was already created by another scheduling actor
+                    self.new_pending_array_semaphore.release()
+                else:
+                    array.chunk_refs[timestep] = []
 
-            array = self.arrays[(chunk.array_name, chunk.timestep)]
+                    self.new_array_created.set()
+                    self.new_array_created.clear()
 
-            # TODO refactor so that the function works with only one array
-            if it == 0:
-                array.add_chunk_ref(all_chunks_ref[0])
+        is_ready = array.add_chunk_ref(all_chunks_ref[0], timestep)
 
-            is_ready = array.add_chunk(
-                chunk.size, chunk.position, chunk.dtype, chunk.nb_chunks_per_dim, scheduling_actor_id
+        if is_ready:
+            self.arrays_ready.put_nowait(
+                (
+                    array_name,
+                    timestep,
+                    array.get_full_array(timestep),
+                )
             )
 
-            if is_ready:
-                self.arrays_ready.put_nowait(
-                    (
-                        chunk.array_name,
-                        array.timestep,
-                        array.get_full_array(),
-                    )
-                )
-                del self.arrays[(chunk.array_name, chunk.timestep)]
-
-    async def get_next_array(self) -> tuple[str, int, da.Array]:
+    async def get_next_array(self) -> tuple[str, Timestep, da.Array]:
         array = await self.arrays_ready.get()
         self.new_pending_array_semaphore.release()
         return array
