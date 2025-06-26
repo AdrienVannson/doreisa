@@ -251,9 +251,7 @@ class SimulationHead:
         for position, size in chunks:
             array.set_chunk_owner(nb_chunks_per_dim, dtype, position, size, scheduling_actor_id)
 
-    async def chunks_ready(
-        self, array_name: str, timestep: Timestep, scheduling_actor_id: int, all_chunks_ref: list[ray.ObjectRef]
-    ) -> None:
+    async def chunks_ready(self, array_name: str, timestep: Timestep, all_chunks_ref: list[ray.ObjectRef]) -> None:
         """
         Called by the scheduling actors to inform the head actor that the chunks are ready.
         The chunks are not sent.

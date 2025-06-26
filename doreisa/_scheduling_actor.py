@@ -193,7 +193,7 @@ class SchedulingActor:
             all_chunks_ref = ray.put(chunks)
 
             await self.head.chunks_ready.options(enable_task_events=False).remote(
-                array_name, timestep, self.actor_id, [all_chunks_ref]
+                array_name, timestep, [all_chunks_ref]
             )
 
             array_timestep.chunks_ready_event.set()
