@@ -97,6 +97,12 @@ class _DaskArrayData:
                 assert self.chunks_size[d][position[d]] == size[d]
 
     def add_chunk_ref(self, chunk_ref: ray.ObjectRef, timestep: Timestep) -> bool:
+        """
+        Add a reference sent by a scheduling actor.
+
+        Return:
+            True if all the chunks for this timestep are ready, False otherwise.
+        """
         self.chunk_refs[timestep].append(chunk_ref)
 
         # We don't know all the owners yet
