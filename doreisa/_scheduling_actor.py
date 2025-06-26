@@ -94,8 +94,6 @@ def remote_ray_dask_get(dsk, keys):
 
 class _ArrayTimestep:
     def __init__(self):
-        self.nb_chunks_ready: int = 0
-
         # Triggered when all the chunks are ready
         self.chunks_ready_event: asyncio.Event = asyncio.Event()
 
@@ -169,14 +167,11 @@ class SchedulingActor:
         array_timestep = array.timesteps[timestep]
 
         assert chunk_position not in array_timestep.local_chunks
-
         array_timestep.local_chunks[chunk_position] = self.actor_handle._pack_object_ref.remote(chunk)
 
         array.owned_chunks.add((chunk_position, chunk_shape))
 
-        array_timestep.nb_chunks_ready += 1
-
-        if array_timestep.nb_chunks_ready == nb_chunks_of_node:
+        if len(array_timestep.local_chunks) == nb_chunks_of_node:
             if not array.is_registered:
                 # Register the array with the head node
                 await self.head.set_owned_chunks.options(enable_task_events=False).remote(
