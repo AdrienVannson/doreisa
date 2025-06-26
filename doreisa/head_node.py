@@ -191,7 +191,7 @@ class SimulationHead:
         self.arrays: dict[tuple[str, Timestep], _DaskArrayData] = {}
 
         # All the newly created arrays
-        self.arrays_ready: asyncio.Queue[tuple[str, int, da.Array]] = asyncio.Queue()
+        self.arrays_ready: asyncio.Queue[tuple[str, Timestep, da.Array]] = asyncio.Queue()
 
     def list_scheduling_actors(self) -> list[ray.actor.ActorHandle]:
         """
