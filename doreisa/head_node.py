@@ -185,10 +185,6 @@ class SimulationHead:
         # For each ID of a simulation node, the corresponding scheduling actor
         self.scheduling_actors: dict[str, ray.actor.ActorHandle] = {}
 
-        self.arrays_definition: dict[str, ArrayDefinition] = {
-            definition.name: definition for definition in arrays_definitions
-        }
-
         # Must be used before creating a new array, to prevent the simulation from being
         # too many iterations in advance of the analytics.
         self.new_pending_array_semaphore = asyncio.Semaphore(max_pending_arrays)
@@ -242,7 +238,7 @@ class SimulationHead:
         """
         Return the preprocessing callbacks for each array.
         """
-        return {name: definition.preprocess for name, definition in self.arrays_definition.items()}
+        return {name: array.definition.preprocess for name, array in self.arrays.items()}
 
     def set_owned_chunks(
         self,
