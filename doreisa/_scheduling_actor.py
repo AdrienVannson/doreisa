@@ -108,7 +108,7 @@ class SchedulingActor:
         # For collecting chunks
 
         # Triggered when all the chunks are ready
-        self.chunks_ready_event = asyncio.Event()
+        self.chunks_ready_event: dict[tuple[str, Timestep], asyncio.Event] = {}
 
         # {array_name: (chunk position, chunk size), ...}
         self.owned_chunks: dict[str, set[tuple[tuple[int, ...], tuple[int, ...]]]] = {}
@@ -152,6 +152,9 @@ class SchedulingActor:
     ) -> None:
         assert (array_name, timestep, chunk_position) not in self.local_chunks
 
+        if (array_name, timestep) not in self.chunks_ready_event:
+            self.chunks_ready_event[(array_name, timestep)] = asyncio.Event()
+
         self.local_chunks[(array_name, timestep, chunk_position)] = self.actor_handle._pack_object_ref.remote(chunk)
 
         if array_name not in self.owned_chunks:
@@ -190,10 +193,10 @@ class SchedulingActor:
             )
 
             del self.nb_chunks_ready[(array_name, timestep)]
-            self.chunks_ready_event.set()
-            self.chunks_ready_event.clear()
+            self.chunks_ready_event[(array_name, timestep)].set()
+            self.chunks_ready_event[(array_name, timestep)].clear()
         else:
-            await self.chunks_ready_event.wait()
+            await self.chunks_ready_event[(array_name, timestep)].wait()
 
     def store_graph(self, graph_id: int, dsk: dict) -> None:
         """
