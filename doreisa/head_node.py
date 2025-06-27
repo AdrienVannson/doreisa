@@ -198,6 +198,12 @@ class SimulationHead:
                 the simulation to be many iterations in advance of the analytics.
         """
 
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write("Initializing the head actor\n")
+
         # For each ID of a simulation node, the corresponding scheduling actor
         self.scheduling_actors: dict[str, ray.actor.ActorHandle] = {}
 
@@ -248,6 +254,11 @@ class SimulationHead:
                 ).remote(actor_id)
 
         await self.scheduling_actors[node_id].ready.remote()  # type: ignore
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"New scheduling actor started: {node_id}\n")
         return self.scheduling_actors[node_id]
 
     def preprocessing_callbacks(self) -> dict[str, Callable]:
