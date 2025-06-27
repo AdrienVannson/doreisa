@@ -23,7 +23,7 @@ def wait_for_head_node() -> None:
             time.sleep(0.1)
 
 
-@ray.remote(num_cpus=0)
+@ray.remote(num_cpus=0, max_retries=0)
 def simple_worker(
     *,
     rank: int,
