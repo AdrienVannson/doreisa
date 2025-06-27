@@ -158,6 +158,14 @@ class SchedulingActor:
         chunk: list[ray.ObjectRef],
         chunk_shape: tuple[int, ...],
     ) -> None:
+        with open(
+            f"/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/{self.actor_id}.log",
+            "a",
+        ) as f:
+            f.write(
+                f"Adding chunk {array_name} at timestep {timestep} with position {chunk_position} and shape {chunk_shape}\n"
+            )
+
         if array_name not in self.arrays:
             self.arrays[array_name] = _Array()
         array = self.arrays[array_name]
@@ -173,6 +181,11 @@ class SchedulingActor:
 
         if len(array_timestep.local_chunks) == nb_chunks_of_node:
             if not array.is_registered:
+                with open(
+                    f"/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/{self.actor_id}.log",
+                    "a",
+                ) as f:
+                    f.write(f"set_owned_chunks for {array_name} at timestep {timestep}\n")
                 # Register the array with the head node
                 await self.head.set_owned_chunks.options(enable_task_events=False).remote(
                     self.actor_id,
@@ -192,6 +205,11 @@ class SchedulingActor:
 
             all_chunks_ref = ray.put(chunks)
 
+            with open(
+                f"/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/{self.actor_id}.log",
+                "a",
+            ) as f:
+                f.write(f"All chunks ready for {array_name} at timestep {timestep} with {len(chunks)} chunks\n")
             await self.head.chunks_ready.options(enable_task_events=False).remote(
                 array_name, timestep, [all_chunks_ref]
             )

@@ -103,14 +103,30 @@ class _DaskArrayData:
         Return:
             True if all the chunks for this timestep are ready, False otherwise.
         """
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"Adding chunk to array\n")
         self.chunk_refs[timestep].append(chunk_ref)
 
         # We don't know all the owners yet
         if len(self.scheduling_actors_id) != self.nb_chunks:
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+                "a",
+            ) as f:
+                f.write(f"Not ready 1\n")
             return False
 
         if self.nb_scheduling_actors is None:
             self.nb_scheduling_actors = len(set(self.scheduling_actors_id.values()))
+
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"Ready test: {len(self.chunk_refs[timestep])} {self.nb_scheduling_actors}\n")
 
         return len(self.chunk_refs[timestep]) == self.nb_scheduling_actors
 
@@ -250,6 +266,12 @@ class SimulationHead:
     ):
         array = self.arrays[array_name]
 
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"Setting owned chunks for {array_name} by {scheduling_actor_id}\n")
+
         for position, size in chunks:
             array.set_chunk_owner(nb_chunks_per_dim, dtype, position, size, scheduling_actor_id)
 
@@ -262,9 +284,20 @@ class SimulationHead:
             chunks: Information about the chunks that are ready.
             source_actor: Handle to the scheduling actor owning the chunks.
         """
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"Chunks ready for {array_name} at timestep {timestep}\n")
+
         array = self.arrays[array_name]
 
         while timestep not in array.chunk_refs:
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+                "a",
+            ) as f:
+                f.write(f"Timestep missing\n")
             t1 = asyncio.create_task(self.new_pending_array_semaphore.acquire())
             t2 = asyncio.create_task(self.new_array_created.wait())
 
@@ -283,9 +316,20 @@ class SimulationHead:
                     self.new_array_created.set()
                     self.new_array_created.clear()
 
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+                "a",
+            ) as f:
+                f.write(f"Timestep created\n")
+
         is_ready = array.add_chunk_ref(all_chunks_ref[0], timestep)
 
         if is_ready:
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+                "a",
+            ) as f:
+                f.write(f"Putting new array in queue\n")
             self.arrays_ready.put_nowait(
                 (
                     array_name,
@@ -295,6 +339,16 @@ class SimulationHead:
             )
 
     async def get_next_array(self) -> tuple[str, Timestep, da.Array]:
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write("Waiting for a new array to be ready\n")
         array = await self.arrays_ready.get()
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
+            "a",
+        ) as f:
+            f.write(f"Array {array[0]} at timestep {array[1]} is ready\n")
         self.new_pending_array_semaphore.release()
         return array
