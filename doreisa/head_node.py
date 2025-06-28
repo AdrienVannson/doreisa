@@ -275,13 +275,13 @@ class SimulationHead:
         nb_chunks_per_dim: tuple[int, ...],
         chunks: list[tuple[tuple[int, ...], tuple[int, ...]]],  # [(chunk position, chunk size), ...]
     ):
-        array = self.arrays[array_name]
-
         with open(
             "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/logs/head.log",
             "a",
         ) as f:
             f.write(f"Setting owned chunks for {array_name} by {scheduling_actor_id}\n")
+
+        array = self.arrays[array_name]
 
         for position, size in chunks:
             array.set_chunk_owner(nb_chunks_per_dim, dtype, position, size, scheduling_actor_id)
