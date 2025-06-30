@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import math
+import time
 from dataclasses import dataclass
 from typing import Callable
 
@@ -112,12 +113,27 @@ class _DaskArrayData:
         if self.nb_scheduling_actors is None:
             self.nb_scheduling_actors = len(set(self.scheduling_actors_id.values()))
 
+        if len(self.chunk_refs[timestep]) == 1:
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+                "a",
+            ) as f:
+                f.write(f"First chunk for timestep {timestep}: {time.time()}")
+
+        if len(self.chunk_refs[timestep]) == self.nb_scheduling_actors:
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+                "a",
+            ) as f:
+                f.write(f"All chunks for timestep {timestep}: {time.time()}")
+
         return len(self.chunk_refs[timestep]) == self.nb_scheduling_actors
 
     def get_full_array(self, timestep: Timestep) -> da.Array:
         """
         Return the full Dask array.
         """
+        begin = time.time()
         assert len(self.scheduling_actors_id) == self.nb_chunks
         assert self.nb_chunks is not None and self.nb_chunks_per_dim is not None
 
@@ -145,6 +161,13 @@ class _DaskArrayData:
             chunks=self.chunks_size,
             dtype=self.dtype,
         )
+
+        end = time.time()
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+            "a",
+        ) as f:
+            f.write(f"Get full array for timestep {timestep}: {end - begin}\n")
 
         return full_array
 
