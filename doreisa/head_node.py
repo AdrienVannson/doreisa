@@ -118,14 +118,14 @@ class _DaskArrayData:
                 "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
                 "a",
             ) as f:
-                f.write(f"First chunk for timestep {timestep}: {time.time()}")
+                f.write(f"First chunk for timestep {timestep}: {time.time()}\n")
 
         if len(self.chunk_refs[timestep]) == self.nb_scheduling_actors:
             with open(
                 "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
                 "a",
             ) as f:
-                f.write(f"All chunks for timestep {timestep}: {time.time()}")
+                f.write(f"All chunks for timestep {timestep}: {time.time()}\n")
 
         return len(self.chunk_refs[timestep]) == self.nb_scheduling_actors
 
