@@ -318,6 +318,18 @@ class SimulationHead:
             )
 
     async def get_next_array(self) -> tuple[str, Timestep, da.Array]:
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+            "a",
+        ) as f:
+            f.write(f"Waiting for next array: {time.time()}\n")
         array = await self.arrays_ready.get()
+
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+            "a",
+        ) as f:
+            f.write(f"Got next array: {time.time()}\n")
+
         self.new_pending_array_semaphore.release()
         return array
