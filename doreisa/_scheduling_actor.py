@@ -167,7 +167,9 @@ class SchedulingActor:
         array_timestep = array.timesteps[timestep]
 
         assert chunk_position not in array_timestep.local_chunks
-        array_timestep.local_chunks[chunk_position] = self.actor_handle._pack_object_ref.remote(chunk)
+        array_timestep.local_chunks[chunk_position] = self.actor_handle._pack_object_ref.options(
+            enable_task_events=False
+        ).remote(chunk)
 
         array.owned_chunks.add((chunk_position, chunk_shape))
 

@@ -4,6 +4,7 @@ from typing import Callable
 import numpy as np
 import ray
 import ray.actor
+import time
 
 
 class Client:
@@ -32,6 +33,8 @@ class Client:
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
+        self.times = []
+
     def add_chunk(
         self,
         array_name: str,
@@ -57,7 +60,21 @@ class Client:
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
         # Setting the owner allows keeping the reference when the simulation script terminates.
+        before = time.time()
         ref = ray.put(chunk, _owner=self.scheduling_actor)
+        after = time.time()
+
+        if timestep > 10:
+            self.times.append(after - before)
+
+        if timestep == 50:
+            mean_time = sum(self.times) / len(self.times)
+
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+                "a",
+            ) as f:
+                f.write(f"Mean time to put a chunk: {mean_time:.6f} seconds\n")
 
         future: ray.ObjectRef = self.scheduling_actor.add_chunk.options(enable_task_events=False).remote(
             array_name,
