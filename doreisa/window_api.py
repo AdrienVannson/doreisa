@@ -1,4 +1,5 @@
 import gc
+import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -37,7 +38,20 @@ def run_simulation(
             name: str
             timestep: int
             array: da.Array
+
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+                "a",
+            ) as f:
+                f.write(f"WAPI Before getting array: {time.time()}\n")
+
             name, timestep, array = ray.get(head.get_next_array.remote())
+
+            with open(
+                "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+                "a",
+            ) as f:
+                f.write(f"WAPI After getting array: {time.time()}\n")
 
             if timestep not in arrays_by_iteration:
                 arrays_by_iteration[timestep] = {}
@@ -54,7 +68,19 @@ def run_simulation(
                 for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
             ]
 
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+            "a",
+        ) as f:
+            f.write(f"WAPI Before callback: {time.time()}\n")
+
         simulation_callback(**all_arrays, timestep=timestep)
+
+        with open(
+            "/linkhome/rech/genlig01/ufw76xj/doreisa-internship/experiments/02-distributed-scheduling/debug-perfs.txt",
+            "a",
+        ) as f:
+            f.write(f"WAPI After callback: {time.time()}\n")
 
         del all_arrays
 
