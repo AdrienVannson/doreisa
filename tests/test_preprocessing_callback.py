@@ -14,14 +14,14 @@ def head_script() -> None:
 
     init()
 
-    def simulation_callback(array: list[da.Array], timestep: int):
-        x = array[0].sum().compute()
+    def simulation_callback(array: da.Array, timestep: int):
+        x = array.sum().compute()
 
         assert x == 100 * timestep
 
     run_simulation(
         simulation_callback,
-        [ArrayDefinition("array", window_size=1, preprocess=lambda arr: 10 * arr)],
+        [ArrayDefinition("array", preprocess=lambda arr: 10 * arr)],
         max_iterations=NB_ITERATIONS,
     )
 
