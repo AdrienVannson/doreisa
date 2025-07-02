@@ -12,7 +12,7 @@ from doreisa.head_node import SimulationHead, get_head_actor_options
 @dataclass
 class ArrayDefinition:
     name: str
-    window_size: int
+    window_size: int | None = None
     preprocess: Callable = lambda x: x
 
 
@@ -46,13 +46,16 @@ def run_simulation(
             arrays_by_iteration[timestep][name] = array
 
         # Compute the arrays to pass to the callback
-        all_arrays: dict[str, list[da.Array]] = {}
+        all_arrays: dict[str, da.Array | list[da.Array]] = {}
 
         for description in arrays_description:
-            all_arrays[description.name] = [
-                arrays_by_iteration[timestep][description.name]
-                for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
-            ]
+            if description.window_size is None:
+                all_arrays[description.name] = arrays_by_iteration[iteration][description.name]
+            else:
+                all_arrays[description.name] = [
+                    arrays_by_iteration[timestep][description.name]
+                    for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
+                ]
 
         simulation_callback(**all_arrays, timestep=timestep)
 
@@ -60,7 +63,7 @@ def run_simulation(
 
         # Remove the oldest arrays
         for description in arrays_description:
-            older_timestep = iteration - description.window_size + 1
+            older_timestep = iteration - (description.window_size or 1) + 1
             if older_timestep >= 0:
                 del arrays_by_iteration[older_timestep][description.name]
 

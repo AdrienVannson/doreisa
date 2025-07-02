@@ -8,6 +8,7 @@ theme:
 
 nav:
   - index.md
+  - analytics.md
 
 plugins:
   - search

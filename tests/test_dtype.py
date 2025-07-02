@@ -13,12 +13,12 @@ def head_script() -> None:
 
     init()
 
-    def simulation_callback(array: list[da.Array], timestep: int):
-        assert array[0].dtype == np.int8
+    def simulation_callback(array: da.Array, timestep: int):
+        assert array.dtype == np.int8
 
     run_simulation(
         simulation_callback,
-        [ArrayDefinition("array", window_size=1)],
+        [ArrayDefinition("array")],
         max_iterations=1,
     )
 
