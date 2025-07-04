@@ -23,9 +23,13 @@ def doreisa_get(dsk, keys, **kwargs):
 
     head_node = ray.get_actor("simulation_head", namespace="doreisa")  # noqa: F841
 
+    # TODO this will not work all the time
     assert isinstance(keys, list) and len(keys) == 1
-    assert isinstance(keys[0], list) and len(keys[0]) == 1
-    key = keys[0][0]
+    if isinstance(keys[0], list):
+        assert len(keys[0]) == 1
+        key = keys[0][0]
+    else:
+        key = keys[0]
 
     # Find the scheduling actors
     scheduling_actors = ray.get(head_node.list_scheduling_actors.remote())
@@ -78,8 +82,13 @@ def doreisa_get(dsk, keys, **kwargs):
         if isinstance(val, ChunkRef):
             partition[k] = val.actor_id
         else:
-            res = [explore(dep) for dep in get_dependencies(dsk, k)]
-            partition[k] = Counter(res).most_common(1)[0][0]
+            actors_dependencies = [explore(dep) for dep in get_dependencies(dsk, k)]
+
+            if not actors_dependencies:
+                # The task is a leaf, we use a random actor
+                partition[k] = random.randint(0, len(scheduling_actors) - 1)
+            else:
+                partition[k] = Counter(actors_dependencies).most_common(1)[0][0]
 
         return partition[k]
 
@@ -87,13 +96,10 @@ def doreisa_get(dsk, keys, **kwargs):
 
     log("2. Graph partitionning done", debug_logs_path)
 
-    partitionned_graphs: dict[int, dict] = {}
+    partitionned_graphs: dict[int, dict] = {actor_id: {} for actor_id in range(len(scheduling_actors))}
 
     for k, v in dsk.items():
         actor_id = partition[k]
-
-        if actor_id not in partitionned_graphs:
-            partitionned_graphs[actor_id] = {}
 
         partitionned_graphs[actor_id][k] = v
 
@@ -123,8 +129,17 @@ def doreisa_get(dsk, keys, **kwargs):
 
     log("5. Graph scheduled", debug_logs_path)
 
-    res = ray.get(ray.get(scheduling_actors[partition[key]].get_value.remote(graph_id, key)))
+    res_ref = scheduling_actors[partition[key]].get_value.remote(graph_id, key)
+
+    if kwargs.get("ray_persist"):
+        if isinstance(keys[0], list):
+            return [[res_ref]]
+        return [res_ref]
+
+    res = ray.get(ray.get(res_ref))
 
     log("6. End Doreisa scheduler", debug_logs_path)
 
-    return [[res]]
+    if isinstance(keys[0], list):
+        return [[res]]
+    return [res]
