@@ -15,9 +15,17 @@ def head_script() -> None:
     init()
 
     def simulation_callback(array: da.Array, timestep: int):
+        # This is the standard dask task graph
         assert len(array.sum().dask) == 9
+
         x = array.sum().persist()
+
+        # We still have a dask array
+        assert isinstance(x, da.Array)
+
+        # But only one task in the task graph, since the result is being computed
         assert len(x.dask) == 1
+
         x_final = x.compute()
         assert x_final == 10 * timestep
 
