@@ -17,7 +17,11 @@ class ArrayDefinition:
 
 
 def run_simulation(
-    simulation_callback: Callable, arrays_description: list[ArrayDefinition], *, max_iterations=1000_000_000
+    simulation_callback: Callable,
+    arrays_description: list[ArrayDefinition],
+    *,
+    max_iterations=1000_000_000,
+    prepare_iteration: Callable | None = None,
 ) -> None:
     # Convert the definitions to the type expected by the head node
     head_arrays_description = [
@@ -57,7 +61,9 @@ def run_simulation(
                     for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
                 ]
 
-        simulation_callback(**all_arrays, timestep=timestep)
+        simulation_callback(
+            **all_arrays, timestep=timestep, preparation_result=prepare_iteration(**all_arrays, timestep=iteration)
+        )
 
         del all_arrays
 
