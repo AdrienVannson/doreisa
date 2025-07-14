@@ -16,7 +16,7 @@ class ArrayDefinition:
     preprocess: Callable = lambda x: x
 
 
-@ray.remote
+@ray.remote(num_cpus=0)
 def _call_prepare_iteration(prepare_iteration: Callable, array: da.Array, timestep: int):
     """
     Call the prepare_iteration function with the given array and timestep.
