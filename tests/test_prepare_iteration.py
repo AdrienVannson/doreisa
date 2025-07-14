@@ -1,9 +1,10 @@
 import dask.array as da
 import ray
 
+from doreisa._scheduler import doreisa_get
 from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
-NB_ITERATIONS = 10
+NB_ITERATIONS = 100
 
 
 @ray.remote
@@ -24,7 +25,8 @@ def head_script() -> None:
 
     def prepare_iteration(array: da.Array, *, timestep: int) -> da.Array:
         # We can't use compute here since the data is not available yet
-        return array.sum().persist()
+        # The function is executed in a Ray worker, we need to set the scheduler again
+        return array.sum().persist(scheduler=doreisa_get)
 
     run_simulation(
         simulation_callback,
