@@ -63,9 +63,7 @@ def run_simulation(
     for iteration in range(max_iterations):
         # Start preparing in advance
         if iteration + preparation_advance < max_iterations and prepare_iteration is not None:
-            array: da.Array = ray.get(
-                head.get_preparation_array.remote(arrays_description[0].name, iteration + preparation_advance)
-            )
+            array = head.get_preparation_array.remote(arrays_description[0].name, iteration + preparation_advance)
             preparation_results[iteration + preparation_advance] = _call_prepare_iteration.remote(
                 prepare_iteration, array, iteration + preparation_advance
             )
