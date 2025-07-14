@@ -8,6 +8,7 @@ import ray.actor
 import ray.util.dask.scheduler
 
 from doreisa import Timestep
+from doreisa._async_dict import AsyncDict
 
 
 @dataclass
@@ -98,7 +99,7 @@ class _ArrayTimestep:
         self.chunks_ready_event: asyncio.Event = asyncio.Event()
 
         # {position: chunk}
-        self.local_chunks: dict[tuple[int, ...], ray.ObjectRef | bytes] = {}
+        self.local_chunks: AsyncDict[tuple[int, ...], ray.ObjectRef | bytes] = AsyncDict()
 
 
 class _Array:
@@ -110,7 +111,7 @@ class _Array:
         # {(chunk position, chunk size), ...}
         self.owned_chunks: set[tuple[tuple[int, ...], tuple[int, ...]]] = set()
 
-        self.timesteps: dict[Timestep, _ArrayTimestep] = {}
+        self.timesteps: AsyncDict[Timestep, _ArrayTimestep] = AsyncDict()
 
 
 @ray.remote
@@ -127,7 +128,7 @@ class SchedulingActor:
         self.scheduling_actors: list[ray.actor.ActorHandle] = []
 
         # For collecting chunks
-        self.arrays: dict[str, _Array] = {}
+        self.arrays: AsyncDict[str, _Array] = AsyncDict()
 
         # For scheduling
         self.new_graph_available = asyncio.Event()
@@ -233,11 +234,18 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                encoded_ref = self.arrays[val.array_name].timesteps[val.timestep].local_chunks[val.position]
-                assert isinstance(encoded_ref, bytes)
-                dsk[key] = pickle.loads(encoded_ref)
+                array = await self.arrays.wait_for_key(val.array_name)
+                array_timestep = await array.timesteps.wait_for_key(val.timestep)
+                ref = await array_timestep.local_chunks.wait_for_key(val.position)
+
+                # This may not be the case depending on the asyncio scheduling order
+                if isinstance(ref, bytes):
+                    ref = pickle.loads(ref)
+
+                dsk[key] = ref
 
         # We will need the ObjectRefs of these keys
+        # TODO: this is a problem: we keep the ObjectRefs, so the memory is not freed (?)
         keys_needed = list(dsk.keys())
 
         refs = await remote_ray_dask_get.remote(dsk, keys_needed)

@@ -16,6 +16,22 @@ class ArrayDefinition:
     preprocess: Callable = lambda x: x
 
 
+@ray.remote
+def _call_prepare_iteration(prepare_iteration: Callable, array: da.Array, timestep: int):
+    """
+    Call the prepare_iteration function with the given array and timestep.
+
+    Args:
+        prepare_iteration: The function to call.
+        array: The Dask array to pass to the function.
+        timestep: The current timestep.
+
+    Returns:
+        The result of the prepare_iteration function.
+    """
+    return prepare_iteration(array, timestep=timestep)
+
+
 def run_simulation(
     simulation_callback: Callable,
     arrays_description: list[ArrayDefinition],
@@ -35,7 +51,26 @@ def run_simulation(
 
     arrays_by_iteration: dict[int, dict[str, da.Array]] = {}
 
+    preparation_advance = 10  # TODO make a parameter
+
+    if prepare_iteration is not None:
+        preparation_results: dict[int, ray.ObjectRef] = {}
+
+        for timestep in range(min(preparation_advance, max_iterations)):
+            # Get the next array from the head node
+            array: da.Array = ray.get(head.get_preparation_array.remote(arrays_description[0].name, timestep))
+            preparation_results[timestep] = _call_prepare_iteration.remote(prepare_iteration, array, timestep)
+
     for iteration in range(max_iterations):
+        # Start preparing in advance
+        if iteration + preparation_advance < max_iterations and prepare_iteration is not None:
+            array: da.Array = ray.get(
+                head.get_preparation_array.remote(arrays_description[0].name, iteration + preparation_advance)
+            )
+            preparation_results[iteration + preparation_advance] = _call_prepare_iteration.remote(
+                prepare_iteration, array, iteration + preparation_advance
+            )
+
         # Get new arrays
         while len(arrays_by_iteration.get(iteration, {})) < len(arrays_description):
             name: str
@@ -61,9 +96,11 @@ def run_simulation(
                     for timestep in range(max(iteration - description.window_size + 1, 0), iteration + 1)
                 ]
 
-        simulation_callback(
-            **all_arrays, timestep=timestep, preparation_result=prepare_iteration(**all_arrays, timestep=iteration)
-        )
+        if prepare_iteration is not None:
+            preparation_result = ray.get(preparation_results[iteration])
+            simulation_callback(**all_arrays, timestep=timestep, preparation_result=preparation_result)
+        else:
+            simulation_callback(**all_arrays, timestep=timestep)
 
         del all_arrays
 

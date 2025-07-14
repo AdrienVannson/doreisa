@@ -372,7 +372,6 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pyright" },
     { name = "ray", extra = ["default"] },
 ]
 
@@ -382,6 +381,8 @@ dev = [
     { name = "mkdocstrings", extra = ["python"] },
     { name = "poethepoet" },
     { name = "pre-commit" },
+    { name = "py-spy" },
+    { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -395,7 +396,6 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.0,<4.0.0" },
     { name = "numpy", specifier = "==1.26.4" },
     { name = "pandas", specifier = ">=2.2.3,<3.0.0" },
-    { name = "pyright", specifier = ">=1.1.397,<2.0.0" },
     { name = "ray", extras = ["default"], specifier = ">=2.46.0,<3.0.0" },
 ]
 
@@ -405,6 +405,8 @@ dev = [
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29.1" },
     { name = "poethepoet", specifier = ">=0.32.2,<0.33" },
     { name = "pre-commit", specifier = ">=4.2.0,<5" },
+    { name = "py-spy", specifier = ">=0.4.0" },
+    { name = "pyright", specifier = ">=1.1.397,<2.0.0" },
     { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "ruff", specifier = ">=0.9.7,<0.10" },
 ]
