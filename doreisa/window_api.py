@@ -38,6 +38,7 @@ def run_simulation(
     *,
     max_iterations=1000_000_000,
     prepare_iteration: Callable | None = None,
+    preparation_advance: int = 3,
 ) -> None:
     # Convert the definitions to the type expected by the head node
     head_arrays_description = [
@@ -50,8 +51,6 @@ def run_simulation(
     head: Any = SimulationHead.options(**get_head_actor_options()).remote(head_arrays_description, max_pending_arrays)
 
     arrays_by_iteration: dict[int, dict[str, da.Array]] = {}
-
-    preparation_advance = 10  # TODO make a parameter
 
     if prepare_iteration is not None:
         preparation_results: dict[int, ray.ObjectRef] = {}

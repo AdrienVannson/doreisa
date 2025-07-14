@@ -5,7 +5,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-class AsyncDict(Generic[K, V]):  # TODO reduce the time complexity
+class AsyncDict(Generic[K, V]):
     def __init__(self) -> None:
         self._data: dict[K, V] = {}
         self._new_key_event = asyncio.Event()

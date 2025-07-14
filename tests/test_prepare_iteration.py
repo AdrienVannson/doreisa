@@ -33,6 +33,7 @@ def head_script() -> None:
         [ArrayDefinition("array")],
         max_iterations=NB_ITERATIONS,
         prepare_iteration=prepare_iteration,
+        preparation_advance=10,
     )
 
 
