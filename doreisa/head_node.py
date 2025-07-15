@@ -42,6 +42,9 @@ class _DaskArrayData:
     def __init__(self, definition: ArrayDefinition) -> None:
         self.definition = definition
 
+        # This will be set when we know, for each chunk, the scheduling actor in charge of it.
+        self.fully_defined: asyncio.Event = asyncio.Event()
+
         # This will be set when the first chunk is added
         self.nb_chunks_per_dim: tuple[int, ...] | None = None
         self.nb_chunks: int | None = None
@@ -114,15 +117,23 @@ class _DaskArrayData:
 
         return len(self.chunk_refs[timestep]) == self.nb_scheduling_actors
 
-    def get_full_array(self, timestep: Timestep) -> da.Array:
+    def get_full_array(self, timestep: Timestep, *, is_preparation: bool = False) -> da.Array:
         """
-        Return the full Dask array.
+        Return the full Dask array for a given timestep.
+
+        Args:
+            timestep: The timestep for which the full array should be returned.
+            is_preparation: If True, the array will not contain ObjectRefs to the
+                actual data.
         """
         assert len(self.scheduling_actors_id) == self.nb_chunks
         assert self.nb_chunks is not None and self.nb_chunks_per_dim is not None
 
-        all_chunks = ray.put(self.chunk_refs[timestep])
-        del self.chunk_refs[timestep]
+        if is_preparation:
+            all_chunks = None
+        else:
+            all_chunks = ray.put(self.chunk_refs[timestep])
+            del self.chunk_refs[timestep]
 
         # We need to add the timestep since the same name can be used several times for different
         # timesteps
@@ -132,7 +143,11 @@ class _DaskArrayData:
             # We need to repeat the name and position in the value since the key might be removed
             # by the Dask optimizer
             (dask_name,) + position: ChunkRef(
-                actor_id, self.definition.name, timestep, position, _all_chunks=all_chunks if it == 0 else None
+                actor_id,
+                self.definition.name,
+                timestep,
+                position,
+                _all_chunks=all_chunks if it == 0 else None,
             )
             for it, (position, actor_id) in enumerate(self.scheduling_actors_id.items())
         }
@@ -293,8 +308,20 @@ class SimulationHead:
                     array.get_full_array(timestep),
                 )
             )
+            array.fully_defined.set()
 
     async def get_next_array(self) -> tuple[str, Timestep, da.Array]:
         array = await self.arrays_ready.get()
         self.new_pending_array_semaphore.release()
         return array
+
+    async def get_preparation_array(self, array_name: str, timestep: Timestep) -> da.Array:
+        """
+        Return the full Dask array for a given timestep, used for preparation.
+
+        Args:
+            array_name: The name of the array.
+            timestep: The timestep for which the full array should be returned.
+        """
+        await self.arrays[array_name].fully_defined.wait()
+        return self.arrays[array_name].get_full_array(timestep, is_preparation=True)

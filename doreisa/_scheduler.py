@@ -115,6 +115,7 @@ def doreisa_get(dsk, keys, **kwargs):
         [
             actor.store_graph.options(enable_task_events=False).remote(graph_id, partitionned_graphs[id])
             for id, actor in enumerate(scheduling_actors)
+            if partitionned_graphs[id]
         ]
     )
 
@@ -122,8 +123,9 @@ def doreisa_get(dsk, keys, **kwargs):
 
     ray.get(
         [
-            scheduling_actors[i].schedule_graph.options(enable_task_events=False).remote(graph_id)
-            for i in range(len(scheduling_actors))
+            actor.schedule_graph.options(enable_task_events=False).remote(graph_id)
+            for id, actor in enumerate(scheduling_actors)
+            if partitionned_graphs[id]
         ]
     )
 
