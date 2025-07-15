@@ -238,14 +238,14 @@ class SchedulingActor:
                 array_timestep = await array.timesteps.wait_for_key(val.timestep)
                 ref = await array_timestep.local_chunks.wait_for_key(val.position)
 
-                # This may not be the case depending on the asyncio scheduling order
-                if isinstance(ref, bytes):
+                if isinstance(ref, bytes):  # This may not be the case depending on the asyncio scheduling order
                     ref = pickle.loads(ref)
+                else:
+                    ref = pickle.loads(pickle.dumps(ref))  # To free the memory automatically
 
                 dsk[key] = ref
 
         # We will need the ObjectRefs of these keys
-        # TODO: this is a problem: we keep the ObjectRefs, so the memory is not freed (?)
         keys_needed = list(dsk.keys())
 
         refs = await remote_ray_dask_get.remote(dsk, keys_needed)

@@ -42,6 +42,9 @@ class _DaskArrayData:
     def __init__(self, definition: ArrayDefinition) -> None:
         self.definition = definition
 
+        # This will be set when we know, for each chunk, the scheduling actor in charge of it.
+        self.fully_defined: asyncio.Event = asyncio.Event()
+
         # This will be set when the first chunk is added
         self.nb_chunks_per_dim: tuple[int, ...] | None = None
         self.nb_chunks: int | None = None
@@ -305,6 +308,7 @@ class SimulationHead:
                     array.get_full_array(timestep),
                 )
             )
+            array.fully_defined.set()
 
     async def get_next_array(self) -> tuple[str, Timestep, da.Array]:
         array = await self.arrays_ready.get()
@@ -319,8 +323,5 @@ class SimulationHead:
             array_name: The name of the array.
             timestep: The timestep for which the full array should be returned.
         """
-        if timestep == 0:  # Wait until we have all the required info. TODO maybe it's not the right array
-            array = await self.arrays_ready.get()
-            self.arrays_ready.put_nowait(array)
-
+        await self.arrays[array_name].fully_defined.wait()
         return self.arrays[array_name].get_full_array(timestep, is_preparation=True)
