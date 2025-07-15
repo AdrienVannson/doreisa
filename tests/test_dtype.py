@@ -5,7 +5,7 @@ import ray
 from tests.utils import ray_cluster, simple_worker, wait_for_head_node  # noqa: F401
 
 
-@ray.remote
+@ray.remote(max_retries=0)
 def head_script() -> None:
     """The head node checks that the values are correct"""
     from doreisa.head_node import init
