@@ -1,5 +1,4 @@
 import asyncio
-import pickle
 from dataclasses import dataclass
 
 import numpy as np
@@ -26,8 +25,10 @@ class ChunkRef:
     timestep: Timestep
     position: tuple[int, ...]
 
-    # Set for one chunk only.
-    _all_chunks: ray.ObjectRef | None = None
+    # An ObjectRef containing a dictionary {position: chunk ObjectRef}. The dictionary
+    # contains all the chunks of the array for this timestep that are owned by this actor.
+    # None is the array is a preparation array.
+    all_chunks: ray.ObjectRef | None
 
 
 @dataclass
@@ -99,7 +100,8 @@ class _ArrayTimestep:
         self.chunks_ready_event: asyncio.Event = asyncio.Event()
 
         # {position: chunk}
-        self.local_chunks: AsyncDict[tuple[int, ...], ray.ObjectRef | bytes] = AsyncDict()
+        # The chunk is represented by an ObjectRef that directly contains the data.
+        self.local_chunks: AsyncDict[tuple[int, ...], ray.ObjectRef] = AsyncDict()
 
 
 class _Array:
@@ -133,7 +135,6 @@ class SchedulingActor:
         # For scheduling
         self.new_graph_available = asyncio.Event()
         self.graph_infos: dict[int, GraphInfo] = {}
-        self.partitionned_graphs: dict[int, dict] = {}
 
     def ready(self) -> None:
         pass
@@ -168,7 +169,7 @@ class SchedulingActor:
         array_timestep = array.timesteps[timestep]
 
         assert chunk_position not in array_timestep.local_chunks
-        array_timestep.local_chunks[chunk_position] = self.actor_handle._pack_object_ref.remote(chunk)
+        array_timestep.local_chunks[chunk_position] = chunk[0]
 
         array.owned_chunks.add((chunk_position, chunk_shape))
 
@@ -184,17 +185,14 @@ class SchedulingActor:
                 )
                 array.is_registered = True
 
-            chunks = []
+            chunks: dict[tuple[int, ...], ray.ObjectRef] = {}
             for position, size in array.owned_chunks:
-                c = array_timestep.local_chunks[position]
-                assert isinstance(c, ray.ObjectRef)
-                chunks.append(c)
-                array_timestep.local_chunks[position] = pickle.dumps(c)
+                chunks[position] = array_timestep.local_chunks[position]
 
             all_chunks_ref = ray.put(chunks)
 
             await self.head.chunks_ready.options(enable_task_events=False).remote(
-                array_name, timestep, [all_chunks_ref]
+                self.actor_id, array_name, timestep, [all_chunks_ref]
             )
 
             array_timestep.chunks_ready_event.set()
@@ -202,19 +200,7 @@ class SchedulingActor:
         else:
             await array_timestep.chunks_ready_event.wait()
 
-    def store_graph(self, graph_id: int, dsk: dict) -> None:
-        """
-        Store the given graph in the actor until `schedule_graph` is called.
-
-        This allows measuring precisely the time it takes to send the graph to all the
-        actors. If needed, this will be optimized using an efficient communication
-        method.
-        """
-        self.partitionned_graphs[graph_id] = dsk
-
-    async def schedule_graph(self, graph_id: int):
-        dsk = self.partitionned_graphs.pop(graph_id)
-
+    async def schedule_graph(self, graph_id: int, dsk: dict):
         # Find the scheduling actors
         if not self.scheduling_actors:
             self.scheduling_actors = await self.head.list_scheduling_actors.options(enable_task_events=False).remote()
@@ -234,14 +220,18 @@ class SchedulingActor:
             if isinstance(val, ChunkRef):
                 assert val.actor_id == self.actor_id
 
-                array = await self.arrays.wait_for_key(val.array_name)
-                array_timestep = await array.timesteps.wait_for_key(val.timestep)
-                ref = await array_timestep.local_chunks.wait_for_key(val.position)
-
-                if isinstance(ref, bytes):  # This may not be the case depending on the asyncio scheduling order
-                    ref = pickle.loads(ref)
+                if val.all_chunks is None:
+                    ref = self.actor_handle.get_local_chunk.remote(val.array_name, val.timestep, val.position)
                 else:
-                    ref = pickle.loads(pickle.dumps(ref))  # To free the memory automatically
+                    # TODO get the dictionnary only once
+                    local_refs = await val.all_chunks
+
+                    ref = self.actor_handle._pack_object_ref.remote([local_refs[val.position]])
+
+                # TODO do we still need to have asyncdicts?
+                # array = await self.arrays.wait_for_key(val.array_name)
+                # array_timestep = await array.timesteps.wait_for_key(val.timestep)
+                # ref = await array_timestep.local_chunks.wait_for_key(val.position)
 
                 dsk[key] = ref
 
@@ -255,9 +245,22 @@ class SchedulingActor:
 
         info.scheduled_event.set()
 
+    async def get_local_chunk(self, array_name: str, timestep: Timestep, position: tuple[int, ...]) -> ray.ObjectRef:
+        array = await self.arrays.wait_for_key(array_name)
+        array_timestep = await array.timesteps.wait_for_key(timestep)
+        res = await array_timestep.local_chunks.wait_for_key(position)
+        return res
+
     async def get_value(self, graph_id: int, key: str):
         while graph_id not in self.graph_infos:
             await self.new_graph_available.wait()
 
         await self.graph_infos[graph_id].scheduled_event.wait()
         return await self.graph_infos[graph_id].refs[key]
+
+    def clear_graph(self, graph_id: int):
+        # return  # TODO if we add this return, everything works
+        del self.graph_infos[graph_id]
+
+    def clear_array(self, name: str, timestep: int):
+        del self.arrays[name].timesteps[timestep]

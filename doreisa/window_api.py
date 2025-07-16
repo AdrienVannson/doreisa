@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 import dask.array as da
 import ray
+import ray.actor
 
 from doreisa.head_node import ArrayDefinition as HeadArrayDefinition
 from doreisa.head_node import SimulationHead, get_head_actor_options
@@ -106,6 +107,12 @@ def run_simulation(
             older_timestep = iteration - (description.window_size or 1) + 1
             if older_timestep >= 0:
                 del arrays_by_iteration[older_timestep][description.name]
+
+                # ray.get(head.clear_array.remote(description.name, older_timestep))
+
+                # TODO not here, only once when the actors are ready
+                scheduling_actors: list[ray.actor.ActorHandle] = ray.get(head.list_scheduling_actors.remote())
+                ray.get([actor.clear_array.remote(description.name, older_timestep) for actor in scheduling_actors])
 
                 if not arrays_by_iteration[older_timestep]:
                     del arrays_by_iteration[older_timestep]
