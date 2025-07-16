@@ -111,13 +111,9 @@ def doreisa_get(dsk, keys, **kwargs):
 
     graph_id = random.randint(0, 2**128 - 1)
 
-    ray.get(
-        [
-            actor.schedule_graph.options(enable_task_events=False).remote(graph_id, partitionned_graphs[id])
-            for id, actor in enumerate(scheduling_actors)
-            if partitionned_graphs[id]
-        ]
-    )
+    for id, actor in enumerate(scheduling_actors):
+        if partitionned_graphs[id]:
+            actor.schedule_graph.remote(graph_id, partitionned_graphs[id])
 
     log("4. Graph scheduled", debug_logs_path)
 
