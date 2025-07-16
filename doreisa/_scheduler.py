@@ -113,25 +113,24 @@ def doreisa_get(dsk, keys, **kwargs):
 
     ray.get(
         [
-            actor.store_graph.options(enable_task_events=False).remote(graph_id, partitionned_graphs[id])
+            actor.schedule_graph.options(enable_task_events=False).remote(graph_id, partitionned_graphs[id])
             for id, actor in enumerate(scheduling_actors)
             if partitionned_graphs[id]
         ]
     )
 
-    log("4. Partitionned graphs sent", debug_logs_path)
-
-    ray.get(
-        [
-            actor.schedule_graph.options(enable_task_events=False).remote(graph_id)
-            for id, actor in enumerate(scheduling_actors)
-            if partitionned_graphs[id]
-        ]
-    )
-
-    log("5. Graph scheduled", debug_logs_path)
+    log("4. Graph scheduled", debug_logs_path)
 
     res_ref = scheduling_actors[partition[key]].get_value.remote(graph_id, key)
+
+    # At this point, get_value will not be called anymore for this graph.
+    ray.get(
+        [
+            actor.clear_graph.options(enable_task_events=False).remote(graph_id)
+            for id, actor in enumerate(scheduling_actors)
+            if partitionned_graphs[id]
+        ]
+    )
 
     if kwargs.get("ray_persist"):
         if isinstance(keys[0], list):
@@ -140,7 +139,7 @@ def doreisa_get(dsk, keys, **kwargs):
 
     res = ray.get(ray.get(res_ref))
 
-    log("6. End Doreisa scheduler", debug_logs_path)
+    log("5. End Doreisa scheduler", debug_logs_path)
 
     if isinstance(keys[0], list):
         return [[res]]
