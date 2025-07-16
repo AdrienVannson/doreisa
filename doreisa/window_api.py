@@ -50,7 +50,6 @@ def run_simulation(
     max_pending_arrays = 2 * len(arrays_description)
 
     head: Any = SimulationHead.options(**get_head_actor_options()).remote(head_arrays_description, max_pending_arrays)
-    scheduling_actors: list[ray.actor.ActorHandle] = ray.get(head.list_scheduling_actors.remote())
 
     arrays_by_iteration: dict[int, dict[str, da.Array]] = {}
 
@@ -111,7 +110,8 @@ def run_simulation(
 
                 # ray.get(head.clear_array.remote(description.name, older_timestep))
 
-                # TODO do we need ray.get here?
+                # TODO not here, only once when the actors are ready
+                scheduling_actors: list[ray.actor.ActorHandle] = ray.get(head.list_scheduling_actors.remote())
                 ray.get([actor.clear_array.remote(description.name, older_timestep) for actor in scheduling_actors])
 
                 if not arrays_by_iteration[older_timestep]:
