@@ -131,8 +131,7 @@ class SchedulingActor:
         self.arrays: AsyncDict[str, _Array] = AsyncDict()
 
         # For scheduling
-        self.new_graph_available = asyncio.Event()
-        self.graph_infos: dict[int, GraphInfo] = {}
+        self.graph_infos: AsyncDict[int, GraphInfo] = AsyncDict()
 
     def ready(self) -> None:
         pass
@@ -208,8 +207,6 @@ class SchedulingActor:
 
         info = GraphInfo()
         self.graph_infos[graph_id] = info
-        self.new_graph_available.set()
-        self.new_graph_available.clear()
 
         for key, val in dsk.items():
             # Adapt external keys
@@ -243,8 +240,7 @@ class SchedulingActor:
         info.scheduled_event.set()
 
     async def get_value(self, graph_id: int, key: str):
-        while graph_id not in self.graph_infos:
-            await self.new_graph_available.wait()
+        graph_info = await self.graph_infos.wait_for_key(graph_id)
 
-        await self.graph_infos[graph_id].scheduled_event.wait()
-        return await self.graph_infos[graph_id].refs[key]
+        await graph_info.scheduled_event.wait()
+        return await graph_info.refs[key]
