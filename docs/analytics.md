@@ -106,3 +106,34 @@ run_simulation(
     [ArrayDefinition("array", preprocess=lambda chunk: 10 * chunk)],
 )
 ```
+
+## Improving performance: prepare an iteration
+
+It is possible to define a callback that will be executed a bit before the data is ready. The return value of this callback will be passed as an argument to the actual simulation callback.
+
+This is particularly useful when combined with Dask's persist API: since the preparation callback is executed before the data is available, and since several preparation callbacks can be executed in parallel in different Ray workers, it makes it possible to hide the time taken to build the task graph, sent it to the workers, etc to avoid slowing down the simulation.
+
+In most situations, this is negligible, but it can start to matter with simulations running on hundreds of nodes, with task graphs composed of thousands of tasks.
+
+```python
+from doreisa.head_node import init
+from doreisa.window_api import ArrayDefinition, run_simulation
+
+init()
+
+def prepare_iteration(array: da.Array, *, timestep: int) -> da.Array:
+    # We can't use compute here since the data is not available yet
+    return array.sum().persist()
+
+def simulation_callback(array: da.Array, *, timestep: int, preparation_result: da.Array):
+    print(preparation_result.compute())
+
+run_simulation(
+    simulation_callback,
+    [ArrayDefinition("array")],
+    max_iterations=NB_ITERATIONS,
+    prepare_iteration=prepare_iteration,
+    preparation_advance=10,
+)
+```
+
