@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 import dask.array as da
+import dask
 import ray
 
 from doreisa.head_node import ArrayDefinition as HeadArrayDefinition
 from doreisa.head_node import SimulationHead, get_head_actor_options
+from doreisa._scheduler import doreisa_get
 
 
 @dataclass
@@ -29,6 +31,7 @@ def _call_prepare_iteration(prepare_iteration: Callable, array: da.Array, timest
     Returns:
         The result of the prepare_iteration function.
     """
+    dask.config.set(scheduler=doreisa_get, shuffle="tasks")
     return prepare_iteration(array, timestep=timestep)
 
 
