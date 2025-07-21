@@ -58,7 +58,7 @@ def doreisa_get(dsk, keys, **kwargs):
                 f.write(f"{time.time()} {message}\n")
 
     partitioning_strategy: Callable = {"random": random_partitioning, "greedy": greedy_partitioning}[
-        kwargs.get("doreisa_partitioning_strategy", "random")
+        kwargs.get("doreisa_partitioning_strategy", "greedy")
     ]
 
     log("1. Begin Doreisa scheduler", debug_logs_path)
