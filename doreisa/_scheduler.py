@@ -1,11 +1,52 @@
 import random
 import time
 from collections import Counter
+from typing import Callable
 
 import ray
 from dask.core import get_dependencies
 
 from doreisa._scheduling_actor import ChunkRef, ScheduledByOtherActor
+
+
+def random_partitioning(dsk, nb_scheduling_actors: int) -> dict[str, int]:
+    partition = {}
+
+    for key, val in dsk.items():
+        if isinstance(val, ChunkRef):
+            partition[key] = val.actor_id
+        else:
+            partition[key] = random.randint(0, nb_scheduling_actors - 1)
+
+    return partition
+
+
+def greedy_partitioning(dsk, nb_scheduling_actors: int) -> dict[str, int]:
+    partition = {k: -1 for k in dsk.keys()}
+
+    def explore(k) -> int:
+        if partition[k] != -1:
+            return partition[k]
+
+        val = dsk[k]
+
+        if isinstance(val, ChunkRef):
+            partition[k] = val.actor_id
+        else:
+            actors_dependencies = [explore(dep) for dep in get_dependencies(dsk, k)]
+
+            if not actors_dependencies:
+                # The task is a leaf, we use a random actor
+                partition[k] = random.randint(0, nb_scheduling_actors - 1)
+            else:
+                partition[k] = Counter(actors_dependencies).most_common(1)[0][0]
+
+        return partition[k]
+
+    for key in dsk.keys():
+        explore(key)
+
+    return partition
 
 
 def doreisa_get(dsk, keys, **kwargs):
@@ -15,6 +56,10 @@ def doreisa_get(dsk, keys, **kwargs):
         if debug_logs_path is not None:
             with open(debug_logs_path, "a") as f:
                 f.write(f"{time.time()} {message}\n")
+
+    partitioning_strategy: Callable = {"random": random_partitioning, "greedy": greedy_partitioning}[
+        kwargs.get("doreisa_partitioning_strategy", "random")
+    ]
 
     log("1. Begin Doreisa scheduler", debug_logs_path)
 
@@ -34,65 +79,7 @@ def doreisa_get(dsk, keys, **kwargs):
     # Find the scheduling actors
     scheduling_actors = ray.get(head_node.list_scheduling_actors.remote())
 
-    # Find a not too bad scheduling strategy
-    # Good scheduling in a tree
-    partition = {k: -1 for k in dsk.keys()}
-
-    # def explore(key, v: int):
-    #     # Only works for trees for now
-    #     assert scheduling[key] == -1
-    #     scheduling[key] = v
-    #     for dep in get_dependencies(dsk, key):
-    #         explore(dep, v)
-
-    # scheduling[key] = 0
-    # c = 0
-    # for dep1 in get_dependencies(dsk, key):
-    #     scheduling[dep1] = 0
-
-    #     for dep2 in get_dependencies(dsk, dep1):
-    #         scheduling[dep2] = 0
-
-    #         for dep3 in get_dependencies(dsk, dep2):
-    #             scheduling[dep3] = 0
-
-    #             for dep4 in get_dependencies(dsk, dep3):
-    #                 scheduling[dep4] = 0
-
-    #                 for dep5 in get_dependencies(dsk, dep4):
-    #                     explore(dep5, c % len(scheduling_actors))
-    #                     c += 1
-
-    # assert -1 not in scheduling.values()
-
-    # scheduling = {k: randint(0, len(scheduling_actors) - 1) for k in dsk.keys()}
-    # scheduling = {k: i % len(scheduling_actors) for i, k in enumerate(dsk.keys())}
-
-    # Make sure the leafs are scheduled on the right actor
-    # for key, val in dsk.items():
-    #     match val:
-    #         case ("doreisa_chunk", actor_id):
-    #             scheduling[key] = actor_id
-    #         case _:
-    #             pass
-
-    def explore(k) -> int:
-        val = dsk[k]
-
-        if isinstance(val, ChunkRef):
-            partition[k] = val.actor_id
-        else:
-            actors_dependencies = [explore(dep) for dep in get_dependencies(dsk, k)]
-
-            if not actors_dependencies:
-                # The task is a leaf, we use a random actor
-                partition[k] = random.randint(0, len(scheduling_actors) - 1)
-            else:
-                partition[k] = Counter(actors_dependencies).most_common(1)[0][0]
-
-        return partition[k]
-
-    explore(key)
+    partition = partitioning_strategy(dsk, len(scheduling_actors))
 
     log("2. Graph partitionning done", debug_logs_path)
 

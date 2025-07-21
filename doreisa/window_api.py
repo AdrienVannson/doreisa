@@ -2,13 +2,13 @@ import gc
 from dataclasses import dataclass
 from typing import Any, Callable
 
-import dask.array as da
 import dask
+import dask.array as da
 import ray
 
+from doreisa._scheduler import doreisa_get
 from doreisa.head_node import ArrayDefinition as HeadArrayDefinition
 from doreisa.head_node import SimulationHead, get_head_actor_options
-from doreisa._scheduler import doreisa_get
 
 
 @dataclass
