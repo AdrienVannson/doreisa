@@ -81,26 +81,26 @@ def doreisa_get(dsk, keys, **kwargs):
 
     partition = partitioning_strategy(dsk, len(scheduling_actors))
 
-    log("2. Graph partitionning done", debug_logs_path)
+    log("2. Graph partitioning done", debug_logs_path)
 
-    partitionned_graphs: dict[int, dict] = {actor_id: {} for actor_id in range(len(scheduling_actors))}
+    partitioned_graphs: dict[int, dict] = {actor_id: {} for actor_id in range(len(scheduling_actors))}
 
     for k, v in dsk.items():
         actor_id = partition[k]
 
-        partitionned_graphs[actor_id][k] = v
+        partitioned_graphs[actor_id][k] = v
 
         for dep in get_dependencies(dsk, k):
             if partition[dep] != actor_id:
-                partitionned_graphs[actor_id][dep] = ScheduledByOtherActor(partition[dep])
+                partitioned_graphs[actor_id][dep] = ScheduledByOtherActor(partition[dep])
 
-    log("3. Partitionned graphs created", debug_logs_path)
+    log("3. Partitioned graphs created", debug_logs_path)
 
     graph_id = random.randint(0, 2**128 - 1)
 
     for id, actor in enumerate(scheduling_actors):
-        if partitionned_graphs[id]:
-            actor.schedule_graph.remote(graph_id, partitionned_graphs[id])
+        if partitioned_graphs[id]:
+            actor.schedule_graph.remote(graph_id, partitioned_graphs[id])
 
     log("4. Graph scheduled", debug_logs_path)
 
