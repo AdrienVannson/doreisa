@@ -10,13 +10,18 @@ from doreisa._scheduling_actor import ChunkRef, ScheduledByOtherActor
 
 
 def random_partitioning(dsk, nb_scheduling_actors: int) -> dict[str, int]:
+    nb_tasks = len({k for k, v in dsk.items() if not isinstance(v, ChunkRef)})
+
+    actors = [i % nb_scheduling_actors for i in range(nb_tasks)]
+    random.shuffle(actors)
+
     partition = {}
 
     for key, val in dsk.items():
         if isinstance(val, ChunkRef):
             partition[key] = val.actor_id
         else:
-            partition[key] = random.randint(0, nb_scheduling_actors - 1)
+            partition[key] = actors.pop()
 
     return partition
 
