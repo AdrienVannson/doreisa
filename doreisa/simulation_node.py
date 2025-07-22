@@ -1,9 +1,13 @@
 import logging
 from typing import Callable
 
+import cloudpickle
 import numpy as np
 import ray
 import ray.actor
+import zmq
+
+from doreisa.in_transit_analytic_actor import SendChunkRequest
 
 
 class Client:
@@ -40,7 +44,6 @@ class Client:
         nb_chunks_of_node: int,
         timestep: int,
         chunk: np.ndarray,
-        store_externally: bool = False,
     ) -> None:
         """
         Make a chunk of data available to the analytic.
@@ -52,7 +55,6 @@ class Client:
             nb_chunks_of_node: The number of chunks sent by this node. The scheduling actor will
                 inform the head actor when all the chunks are ready.
             chunk: The chunk of data.
-            store_externally: If True, the data is stored externally. TODO Not implemented yet.
         """
         chunk = self.preprocessing_callbacks[array_name](chunk)
 
@@ -72,3 +74,45 @@ class Client:
 
         # Wait until the data is processed before returning to the simulation
         ray.get(future)
+
+
+class InTransitClient:
+    def __init__(self, analytic_node_address: str):
+        # Open a socket to communicate with the analytic node
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+        self.socket.connect(f"tcp://{analytic_node_address}")
+
+        # Get the preprocessing callbacks from the analytic node
+        self.socket.send_pyobj("get_preprocessing_callbacks")
+        self.preprocessing_callbacks: dict[str, Callable] = cloudpickle.loads(self.socket.recv_pyobj())
+
+    def add_chunk(
+        self,
+        array_name: str,
+        chunk_position: tuple[int, ...],
+        nb_chunks_per_dim: tuple[int, ...],
+        nb_chunks_of_analysis_node: int,
+        timestep: int,
+        chunk: np.ndarray,
+    ) -> None:
+        """
+        nb_chunks_of_analysis_node: The number of chunks that the ANALYTIC node will
+                receive for this array.
+        """
+        chunk = self.preprocessing_callbacks[array_name](chunk)
+
+        # Send the data to the analytic node
+        self.socket.send_pyobj(
+            SendChunkRequest(
+                array_name=array_name,
+                chunk_position=chunk_position,
+                nb_chunks_per_dim=nb_chunks_per_dim,
+                nb_chunks_of_analysis_node=nb_chunks_of_analysis_node,
+                timestep=timestep,
+                chunk=chunk,
+            )
+        )
+
+        # Wait for the response from the analytic node
+        self.socket.recv()

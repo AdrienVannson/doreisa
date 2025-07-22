@@ -44,4 +44,28 @@ def simple_worker(
     array = (rank + 1) * np.ones(chunk_size, dtype=dtype)
 
     for i in range(nb_iterations):
-        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_node, i, i * array, store_externally=False)
+        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_node, i, i * array)
+
+
+@ray.remote(num_cpus=0, max_retries=0)
+def in_transit_worker(
+    *,
+    rank: int,
+    position: tuple[int, ...],
+    chunks_per_dim: tuple[int, ...],
+    nb_chunks_of_analytic_node: int,
+    chunk_size: tuple[int, ...],
+    nb_iterations: int,
+    array_name: str = "array",
+    dtype: np.dtype = np.int32,  # type: ignore
+    analytic_node_address: str,
+) -> None:
+    """Worker node sending chunks of data"""
+    from doreisa.simulation_node import InTransitClient
+
+    client = InTransitClient(analytic_node_address=analytic_node_address)
+
+    array = (rank + 1) * np.ones(chunk_size, dtype=dtype)
+
+    for i in range(nb_iterations):
+        client.add_chunk(array_name, position, chunks_per_dim, nb_chunks_of_analytic_node, i, i * array)
