@@ -320,6 +320,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dask", extra = ["dataframe"] },
     { name = "numpy" },
+    { name = "pyzmq" },
     { name = "ray", extra = ["default"] },
 ]
 
@@ -334,14 +335,12 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
-in-transfer = [
-    { name = "pyzmq" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "dask", extras = ["dataframe"], specifier = "==2024.6.0" },
     { name = "numpy", specifier = "==1.26.4" },
+    { name = "pyzmq", specifier = ">=27.0.0" },
     { name = "ray", extras = ["default"], specifier = ">=2.46.0,<3.0.0" },
 ]
 
@@ -356,7 +355,6 @@ dev = [
     { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "ruff", specifier = ">=0.9.7,<0.10" },
 ]
-in-transfer = [{ name = "pyzmq", specifier = ">=27.0.0" }]
 
 [[package]]
 name = "filelock"
