@@ -28,7 +28,7 @@ class InTransitAnalyticActor:
     Actor that runs a ZMQ server to receive data from the simulation nodes.
     """
 
-    def __init__(self, zmq_address: str, *, _fake_node_id: str | None = None) -> None:
+    def __init__(self, _fake_node_id: str | None = None) -> None:
         self.node_id = _fake_node_id or ray.get_runtime_context().get_node_id()
 
         # Get the head actor and the scheduling actor
@@ -39,18 +39,19 @@ class InTransitAnalyticActor:
 
         self.preprocessing_callbacks: dict[str, Callable] = ray.get(self.head.preprocessing_callbacks.remote())
 
-        context = zmq.asyncio.Context()
-        self.socket = context.socket(zmq.REP)
-        self.socket.bind(zmq_address)
+        self.context = zmq.asyncio.Context()
 
-    async def run_zmq_server(self):
+    async def run_zmq_server(self, address: str):
+        socket = self.context.socket(zmq.REP)
+        socket.bind(f"tcp://{address}")
+
         while True:
-            message = await self.socket.recv_pyobj()
+            message = await socket.recv_pyobj()
 
             if message == "get_preprocessing_callbacks":
                 # Send the preprocessing callbacks to the client
                 # Cloudpickle is needed since pickle fails to serialize the callbacks
-                await self.socket.send_pyobj(cloudpickle.dumps(self.preprocessing_callbacks))
+                await socket.send_pyobj(cloudpickle.dumps(self.preprocessing_callbacks))
                 continue
 
             assert isinstance(message, SendChunkRequest)
@@ -65,3 +66,4 @@ class InTransitAnalyticActor:
                 chunk=[ray.put(message.chunk)],
                 chunk_shape=message.chunk.shape,
             )
+            await socket.send_pyobj(None)

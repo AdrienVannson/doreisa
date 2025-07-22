@@ -115,4 +115,4 @@ class InTransitClient:
         )
 
         # Wait for the response from the analytic node
-        self.socket.recv()
+        self.socket.recv_pyobj()

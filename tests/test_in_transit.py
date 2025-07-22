@@ -50,8 +50,11 @@ def test_in_transit(nb_simulation_nodes: int, nb_analytic_nodes: int, ray_cluste
     # Start the analytic actors
     analytic_actors: list[ray.actor.ActorHandle] = []
     for i in range(nb_analytic_nodes):
-        actor = InTransitAnalyticActor.remote(zmq_address=f"tcp://localhost:{8000 + i}")
-        actor.run_zmq_server.remote()
+        actor = InTransitAnalyticActor.remote(_fake_node_id=f"node_{i}")
+
+        for j in range(4 // nb_analytic_nodes):
+            actor.run_zmq_server.remote(f"localhost:{8000 + i * (4 // nb_analytic_nodes) + j}")
+
         analytic_actors.append(actor)
 
     worker_refs = []
@@ -64,7 +67,7 @@ def test_in_transit(nb_simulation_nodes: int, nb_analytic_nodes: int, ray_cluste
                 nb_chunks_of_analytic_node=4 // nb_analytic_nodes,
                 chunk_size=(1, 1),
                 nb_iterations=NB_ITERATIONS,
-                analytic_node_address=f"localhost:{8000 + (rank % nb_analytic_nodes)}",
+                analytic_node_address=f"localhost:{8000 + rank}",
             )
         )
 
@@ -72,7 +75,7 @@ def test_in_transit(nb_simulation_nodes: int, nb_analytic_nodes: int, ray_cluste
 
     # Check that the right number of scheduling actors were created
     simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
-    assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_simulation_nodes
+    assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_analytic_nodes
 
 
 if __name__ == "__main__":
