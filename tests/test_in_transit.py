@@ -30,15 +30,7 @@ def head_script() -> None:
 
 @pytest.mark.parametrize(
     "nb_simulation_nodes, nb_analytic_nodes",
-    [
-        # (1, 1),
-        # (2, 1),
-        # (2, 2),
-        # (4, 1),
-        # (4, 2),
-        # (4, 4),
-        (4, 2)
-    ],
+    [(1, 1), (2, 2), (2, 4), (4, 2), (4, 4)],
 )
 def test_in_transit(nb_simulation_nodes: int, nb_analytic_nodes: int, ray_cluster) -> None:  # noqa: F811
     from doreisa.in_transit_analytic_actor import InTransitAnalyticActor
