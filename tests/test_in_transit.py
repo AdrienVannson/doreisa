@@ -68,8 +68,3 @@ def test_in_transit(nb_simulation_nodes: int, nb_analytic_nodes: int, ray_cluste
     # Check that the right number of scheduling actors were created
     simulation_head = ray.get_actor("simulation_head", namespace="doreisa")
     assert len(ray.get(simulation_head.list_scheduling_actors.remote())) == nb_analytic_nodes
-
-
-if __name__ == "__main__":
-    ray.init()
-    test_in_transit(4, 2, None)
