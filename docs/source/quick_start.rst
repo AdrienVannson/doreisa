@@ -15,10 +15,9 @@ Simulation side
 
 - The simulation is distributed (MPI or similar) and iterative.
 - Any rank that will **ever** send data must instantiate a ``Bridge``.
-- The total number of participating ranks (``world_size``) is known up front.
-- Each ``Bridge`` derives its ID from ``comm.Get_rank()``, and there is always
-  a bridge with rank ``0`` (the master bridge).
-- Each bridge describes the arrays it will share via ``arrays_metadata``.
+- An MPI-style communicator for all ranks is available and passed to each ``Bridge``.
+- There is always a bridge with rank ``0`` (the master bridge).
+- Each bridge describes all the arrays it will share at initialization via a dictionary ``arrays_metadata``.
 - Sends are ordered by non-decreasing timestep: all sends for timestep *i*
   happen before any send for timestep *j > i*.
 - If data is produced on GPU, copy it to CPU before calling ``Bridge.send``.
@@ -26,221 +25,121 @@ Simulation side
 Analytics side
 ^^^^^^^^^^^^^^
 
-- Analytics run on a Ray head node. Dask arrays are backed by Ray tasks.
-- You register callbacks with ``Deisa`` and then execute them.
-- Callback arguments are lists of ``DeisaArray`` objects. The length of the list is the "window size", defined when creating a ``Window``.
-- The array name in ``Window`` must match the bridge metadata name,
-  otherwise the callback will not run for that array.
-- The window list is time-ordered and only reflects the timesteps that were
-  actually sent by the simulation.
+- You instantiate a ``Deisa`` object which handles the coupling with the simulation bridges.
+- You define analytics callbacks that operate on arrays sent by the simulation.
+- Callback arguments are lists of ``DeisaArray`` objects (a Dask Array with a ``.t`` attribute). The MAX length of the list is the window "size" of arrays needed to perform the analytics. 
+- The array name in ``Window`` must match the bridge metadata name, otherwise the callback will not run for that array.
 
-Cluster setup (Ray)
--------------------
+How to run
+----------
 
-Start a Ray head node on the analytics host, then join the simulation nodes.
+The general flow is: 
+
+1. Install deisa-ray on all nodes (``pip install deisa-ray``). If needed,
+   install MPI and mpi4py on all nodes.
+2. Start a Ray cluster (head node + simulation nodes).
+3. Run the analytics script on the head node.
+4. Run the distributed simulation on the simulation nodes using ``mpirun`` or
+   similar.
+
+Below are example commands for each assuming that the distributed simulation is managed by MPI.
+
+Cluster setup (Ray) 
+^^^^^^^^^^^^^^^^^^^
+
+The first step is to start the ray cluster manually: start a Ray head node on the analytics host, then join the simulation nodes.
 For example (often launched via Slurm):
 
 .. code-block:: bash
 
-    ray start --head
-    ray start --address <head-node-address>
+    ray start --head --address <head-node-address> # on the head node (just once)
+    mpirun -hostfile <hostfile> -n <num-simulation-nodes> bash -c "ray start --address <head-node-address>" # one call per each simulation node
+
+
+Analytics setup (Python)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    mpirun -n 1 python analytics.py
+
+
+Simulation setup (Python)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    mpirun -hostfile <hostfile> -n <num-simulation-nodes> python simulation.py
+
+Example snippets
+----------------
 
 Simulation quick snippet
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The simulation creates one ``Bridge`` per participating rank and sends chunks. 
 
 .. code-block:: python
 
+    from mpi4py import MPI
     import numpy as np
     from deisa.ray import Bridge
 
-    # 4 Bridges in total
-    world_size = 4
+    # instantiate the communicator
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+
 
     # descriptio of arrays being shared
     arrays_md = {
+        # name of the array - must match the name used in the analytics callback!
         "temperature": {
             # shape of the full distributed array
-            "global_shape": (256, 256),
+            "global_shape": (64, 64*size),
             # shape of the chunk
             "chunk_shape": (64, 64),
-            # the coordinates of the chunk block in 
-            # the global distributed array
-            "chunk_position": (0, 0),
+            # the coordinates of the chunk block in the global distributed array
+            "chunk_position": (0, rank),
         }
     }
 
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    assert comm.Get_size() == world_size
-
-    # this call should be repeated 4 times with a different rank
+    # Initialization of the bridge
     bridge = Bridge(
         arrays_metadata=arrays_md,
         comm=comm,
     )
 
-    # sending data chunk
+    # sending chunk per timestep
     for t in range(10):
-        chunk = np.ones((64, 64), dtype=np.float64) * t
+        chunk = np.ones((64, 64), dtype=np.float64) * t * rank
         bridge.send(array_name="temperature", chunk=chunk, timestep=t)
 
-    # close bridge
-    bridge.close(timestep=10)
-
 Analytics quick snippet
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Define the analytics callback using Dask operations. ``DeisaArray`` provides
-standard Dask array methods directly, and ``DeisaArray.t`` is the timestep.
+standard Dask array methods directly, and ``.t`` is the timestep for which that array was produced.
 
 .. code-block:: python
 
     from deisa.ray import Deisa
-    from deisa.ray.types import Window
-
-    deisa = Deisa()
-
-    def summary_callback(temperature_window):
-        latest = temperature_window[-1]
-        mean_value = latest.mean().compute()
-        print(f"t={latest.t} mean={mean_value}")
-
-    deisa.register_callback(
-        summary_callback,
-        [Window("temperature", size=3)],
-    )
-
-    deisa.execute_callbacks()
-
-The ``when`` keyword controls when a callback is allowed to run. By default it
-is ``"AND"``, which means the callback is executed only when all required
-arrays are available for the same timestep. You can also use ``when="OR"``,
-which means the callback is triggered whenever any input array has new data for
-a timestep; in that mode the analytics may reuse older arrays for the other
-inputs.
-
-Template:
-
-.. code-block:: python
-
-    deisa.register_callback(
-        my_callback,
-        [Window("temperature"), Window("pressure")],
-        when="AND",  # or "OR"
-    )
-
-You can also use the decorator form for a shorter registration pattern:
-
-.. code-block:: python
+    from deisa.ray.types import DeisaArray, Window
 
     d = Deisa()
 
-    @d.register(Window("temperature"), Window("pressure"), when="OR")
-    def callback(temperature: list[DeisaArray], pressure: list[DeisaArray]):
-        ...
-
-Using ``Window`` with a sliding window
-------------------------------------------
-
-To keep the last three timesteps of an array available inside a callback, use a
-``Window`` with ``size=3``:
-
-.. code-block:: python
-
-    from deisa.ray.types import Window
-
-    temperature_spec = Window("temperature", size=3)
-
-The callback argument for that window spec will contain up to the three most
-recent arrays sent by the simulation. During the first two iterations, the list
-will contain fewer than three arrays, so the callback should guard against
-assuming the full window is already available.
-
-The window size should be chosen based on both memory capacity and the needs of
-the analysis. A window of length 3 means the system must be able to keep three
-copies of that array in memory at the same time. It should also match the
-algorithm you want to implement. For example, a midpoint Euler-style formula
-that needs three timesteps requires ``size=3``.
-
-The list is ordered from oldest to newest: the oldest array is at the
-beginning, and the most recent array is at the end. Each entry is a
-``DeisaArray`` object, so use the object directly as the Dask array and ``.t`` to
-access its timestep.
-
-.. code-block:: python
-
-    def midpoint_callback(temperature_window):
-        if len(temperature_window) < 3:
-            return
-
-        oldest = temperature_window[0]
-        middle = temperature_window[1]
-        newest = temperature_window[-1]
-
-        midpoint_estimate = (
-            oldest + middle + newest
-        ) / 3
-
-        print(
-            f"window covers timesteps {oldest.t}, {middle.t}, {newest.t}"
-        )
-        midpoint_estimate.compute()
-
-Feedback from analytics to simulation
--------------------------------------
-
-Analytics callbacks can publish small timestamped feedback values that the
-simulation can retrieve collectively through the bridges.
-
-On the analytics side, call ``Deisa.set`` with a key, value, and timestep:
-
-.. code-block:: python
-
-    def summary_callback(temperature_window):
-        latest = temperature_window[-1]
+    # register a callback with deisa
+    @d.register(Window("temperature"))
+    def summary_callback(temperature: list[DeisaArray]):
+        latest = temperature[0]
         mean_value = latest.mean().compute()
+        print(f"t={latest.t} mean={mean_value}")
 
-        if mean_value > 10:
-            deisa.set("cooling_factor", value=0.5, timestep=latest.t)
+    # register all callbacks ...
 
-For a given key, feedback timesteps must be published in strictly increasing
-order. Publishing the same timestep twice or publishing an older timestep raises
-``ValueError``.
+    # execute callbacks
+    d.execute_callbacks()
 
-On the simulation side, every bridge must call ``Bridge.get`` in the same order
-for a given key and timestep. Bridge ``0`` checks the global feedback queue and
-broadcasts the result to the other bridges. If the value is not available, all
-bridges receive ``None``. ``Bridge.get`` does not accept a ``default`` value;
-apply any simulation-side fallback after the call.
-
-.. code-block:: python
-
-    factor = bridge.get("cooling_factor", timestep=t)
-    if factor is None:
-        factor = 1.0
-
-Calling ``Bridge.get("cooling_factor")`` without a timestep returns the
-retained feedback queue for that key as a list of ``(timestep, value)`` pairs,
-or ``None`` if no feedback has been published for the key.
-
-Feedback is meant for timesteps where the simulation can still react. Analytics
-callbacks are evaluated once DEISA has seen a later timestep, or the simulation
-close sentinel, so feedback for the final simulated timestep may only become
-visible during shutdown. Simulations should not rely on reacting to analytics
-events detected at the last timestep.
-
-.. warning::
-
-    Feedback delivery is asynchronous and is not reproducible run to run. The
-    feedback queue may be populated at slightly different times, and bridges may
-    read it at slightly different times, so the timestep at which the simulation
-    observes an analytics event can vary. Simulation correctness should not
-    depend on exactly when a feedback event is detected. Instead, simulation code
-    should decide how to react whenever a signal becomes available. If tight,
-    deterministic coupling is required, consider using a code coupler instead.
 
 Where to go next
 ----------------

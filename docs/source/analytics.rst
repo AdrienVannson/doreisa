@@ -1,13 +1,141 @@
 Analytics
 =========
 
+Features
+--------
+
+Keeping a sliding window of arrays
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To keep the last three timesteps of an array available inside a callback, use a
+``Window`` with ``size=3``:
+
+.. code-block:: python
+
+    Window("temperature", size=3)
+
+The callback argument for that window spec will contain up to the three most
+recent arrays sent by the simulation. During the first two iterations, the list
+will contain fewer than three arrays, so the callback should guard against
+assuming the full window is already available.
+
+The window size should be chosen based on both memory capacity and the needs of
+the analysis. A window of length 3 means the system must be able to keep three
+copies of that array in memory at the same time. It should also match the
+algorithm you want to implement. For example, a midpoint Euler-style formula
+that needs three timesteps requires ``size=3``.
+
+The list is ordered from oldest to newest: the oldest array is at the
+beginning, and the most recent array is at the end. Each entry is a
+``DeisaArray`` object, so use the object directly as the Dask array and ``.t`` to
+access its timestep. 
+
+.. warning::
+
+    You must guard against the list being shorter than the window size, since
+    the first few timesteps will not have enough data yet.
+
+.. code-block:: python
+
+    def midpoint_callback(temperature_window):
+        if len(temperature_window) < 3:
+            return
+
+        oldest = temperature_window[0]
+        middle = temperature_window[1]
+        newest = temperature_window[-1]
+
+        midpoint_estimate = (
+            oldest + middle + newest
+        ) / 3
+
+        print(
+            f"window covers timesteps {oldest.t}, {middle.t}, {newest.t}"
+        )
+        midpoint_estimate.compute()
+
+``when`` keyword
+^^^^^^^^^^^^^^^^
+
+The ``when`` keyword controls when a callback is allowed to run. By default it
+is ``"AND"``, which means the callback is executed only when all required
+arrays are available for the same timestep. You can also use ``when="OR"``,
+which means the callback is triggered whenever any input array has new data for
+a timestep; in that mode the analytics may reuse older arrays for the other
+inputs.
+
+Template:
+
+.. code-block:: python
+
+    d.register(Window("temperature"), Window("pressure"), when="AND") # or "OR"
+    def callback(temperature: list[DeisaArray], pressure: list[DeisaArray]):
+        ...
+
+
+
+Feedback from analytics to simulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Analytics callbacks can publish small timestamped feedback values that the
+simulation can retrieve collectively through the bridges. The values are stored in a global named feedback queue which the simulation can 
+query or retrieve.
+
+On the analytics side, call ``Deisa.set`` with a key, value, and timestep:
+
+.. code-block:: python
+
+    @d.register(Window("temperature"))
+    def summary_callback(temperature):
+        latest = temperature[0]
+        mean_value = latest.mean().compute()
+
+        if mean_value > 10:
+            # set value for simulation to retrieve in queue
+            d.set("cooling_factor", value=0.5, timestep=latest.t)
+
+For a given key, feedback timesteps must be published in strictly increasing
+order. Publishing the same timestep twice or publishing an older timestep raises
+``ValueError``.
+
+On the simulation side, every bridge must call ``Bridge.get`` in the same order
+for a given key and timestep. Bridge ``0`` checks the global feedback queue and
+broadcasts the result to the other bridges. 
+
+.. code-block:: python
+
+    factor = bridge.get("cooling_factor", timestep=t)
+    if factor is None:
+        factor = 1.0
+
+Calling ``Bridge.get("cooling_factor")`` without a timestep returns the
+retained feedback queue for that key as a list of ``(timestep, value)`` pairs,
+or ``None`` if no feedback has been published for the key.
+
+Since DEISA analyzes which callbacks to run whenever it sees a higher timestep, 
+a feedback signal on the last timestep will not allow the simulation to react to it.
+
+.. warning::
+
+    Feedback delivery is asynchronous and is not reproducible run to run. The
+    feedback queue may be populated at slightly different times, and bridges may
+    read it at slightly different times, so the timestep at which the simulation
+    observes an analytics event can vary. Simulation correctness should not
+    depend on exactly when a feedback event is detected. Instead, simulation code
+    should decide how to react whenever a signal becomes available. If tight,
+    deterministic coupling is required, consider using a code coupler instead.
+
+
+Examples
+--------
+
 In callback examples, the name passed to ``Window`` is also the keyword
 argument name used when DEISA calls the callback. Each argument is a
 ``list[DeisaArray]`` ordered from oldest to newest; with no explicit
 ``size`` the list contains only the latest shared timestep.
 
 Simple example
---------------
+^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -24,7 +152,7 @@ Simple example
     d.execute_callbacks()
 
 Several arrays
---------------
+^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -46,7 +174,7 @@ Several arrays
     d.execute_callbacks()
 
 ``when="AND"`` and ``when="OR"``
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When a callback depends on several arrays, ``when`` controls which arrivals
 are allowed to trigger it.
@@ -100,7 +228,7 @@ With ``when="OR"``, a list may be reused from an older timestep if that array
 did not produce a new share for the current trigger.
 
 Sliding window
---------------
+^^^^^^^^^^^^^^
 
 If the analysis requires access to several iterations (for example, to compute
 a time derivative), it is possible to use the ``size`` parameter.
@@ -154,7 +282,7 @@ any operation that needs a minimum number of timesteps.
     d.execute_callbacks()
 
 Dask persist
-------------
+^^^^^^^^^^^^
 
 Dask's ``persist`` is supported:
 
@@ -178,7 +306,7 @@ Dask's ``persist`` is supported:
     d.execute_callbacks()
 
 Saving to HDF5
---------------
+^^^^^^^^^^^^^^
 
 ``DeisaArray`` provides a convenience method for writing one array to HDF5:
 
@@ -223,7 +351,7 @@ If you want to save several arrays into the same HDF5 file, use
     d.execute_callbacks()
 
 Converting to Xarray
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 If you want to work with Xarray APIs, build an ``xarray.DataArray`` from the
 underlying Dask array:
@@ -250,7 +378,7 @@ underlying Dask array:
     d.execute_callbacks()
 
 Saving Xarray to NetCDF
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 One convenient pattern is to convert the ``DeisaArray`` to an
 ``xarray.DataArray`` and then write it to NetCDF:
