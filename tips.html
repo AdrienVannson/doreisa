@@ -201,7 +201,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -252,17 +251,17 @@
         <article role="main" id="furo-main-content">
           <section id="tips">
 <h1>Tips<a class="headerlink" href="#tips" title="Link to this heading">¶</a></h1>
-<section id="determining-the-rendezvous-ip-address-and-port">
-<h2>Determining the rendezvous IP address and port<a class="headerlink" href="#determining-the-rendezvous-ip-address-and-port" title="Link to this heading">¶</a></h2>
+<section id="determining-a-rendezvous-ip-address-and-port">
+<h2>Determining a rendezvous IP address and port<a class="headerlink" href="#determining-a-rendezvous-ip-address-and-port" title="Link to this heading">¶</a></h2>
 <p>When launching a simulation across multiple ranks, it is often convenient to
-have rank 0 choose the Gloo rendezvous address and port, then share them with
-the other ranks through a small JSON file.</p>
+have rank 0 choose the rendezvous address and port for a custom TCP-based
+communicator, then share them with the other ranks through a small JSON file.</p>
 <p>In the example below, rank 0 extracts the IPv4 address of the high-speed
 network interface named <code class="docutils literal notranslate"><span class="pre">hsn0</span></code>, binds a socket to port <code class="docutils literal notranslate"><span class="pre">0</span></code> to let the OS
-pick a free port, and writes both values to <code class="docutils literal notranslate"><span class="pre">gloo_rdzv.json</span></code>. All other
+pick a free port, and writes both values to <code class="docutils literal notranslate"><span class="pre">comm_rdzv.json</span></code>. All other
 ranks wait until that file exists, then read it and reuse the same rendezvous
 endpoint.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rdzv</span> <span class="o">=</span> <span class="s2">&quot;./gloo_rdzv.json&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rdzv</span> <span class="o">=</span> <span class="s2">&quot;./comm_rdzv.json&quot;</span>
 <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
     <span class="n">ip</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span>
         <span class="s2">&quot;ip -o -4 addr show hsn0 | awk &#39;{print $4}&#39; | cut -d/ -f1&quot;</span><span class="p">,</span>
@@ -336,7 +335,7 @@ endpoint.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Tips</a><ul>
-<li><a class="reference internal" href="#determining-the-rendezvous-ip-address-and-port">Determining the rendezvous IP address and port</a></li>
+<li><a class="reference internal" href="#determining-a-rendezvous-ip-address-and-port">Determining a rendezvous IP address and port</a></li>
 </ul>
 </li>
 </ul>

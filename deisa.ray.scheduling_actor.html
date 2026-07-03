@@ -201,7 +201,6 @@
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -262,7 +261,7 @@
 <li><p>Collecting chunks of arrays sent by simulation nodes (via <code class="xref py py-class docutils literal notranslate"><span class="pre">Bridge</span></code>)</p></li>
 <li><p>Registering its owned chunks with the head node</p></li>
 <li><p>Providing a small key/value channel (<code class="docutils literal notranslate"><span class="pre">set</span></code>, <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">delete</span></code>) for
-non-chunked feedback between analytics and simulation.</p></li>
+feedback between analytics and simulation.</p></li>
 </ul>
 <p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulingActor</span></code> subclass adds graph-scheduling behaviour on
 top of this base functionality.</p>
@@ -318,10 +317,10 @@ by this node actor.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.feedback_non_chunked">
-<span class="sig-name descname"><span class="pre">feedback_non_chunked</span></span><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.feedback_non_chunked" title="Link to this definition">¶</a></dt>
-<dd><p>Dictionary for storing non-chunked feedback values shared between
-analytics and simulation.</p>
+<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.feedback">
+<span class="sig-name descname"><span class="pre">feedback</span></span><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.feedback" title="Link to this definition">¶</a></dt>
+<dd><p>Dictionary for storing feedback values shared between analytics and
+simulation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict</p>
@@ -331,7 +330,7 @@ analytics and simulation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.add_chunk">
-<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">add_chunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ObjectRef</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.add_chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.add_chunk" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">add_chunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ObjectRef</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.add_chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.add_chunk" title="Link to this definition">¶</a></dt>
 <dd><p>Add a chunk of data to this node actor.</p>
 <p>This method is called by Bridge instances to send chunks of arrays
 to this node actor. When all chunks from a node are received, the
@@ -343,9 +342,8 @@ actor forwards a position-&gt;double-ref mapping to the head node.</p>
 <li><p><strong>array_name</strong> (<em>str</em>) – Name of the array receiving the chunk.</p></li>
 <li><p><strong>chunk_ref</strong> (<em>list</em><em>[</em><em>ray.ObjectRef</em><em>]</em>) – Single-element list containing the Ray ObjectRef to the chunk
 data. The extra list level is kept for Dask compatibility.</p></li>
+<li><p><strong>dtype</strong> (<em>np.dtype</em>) – NumPy dtype read from the chunk before it was stored in Ray.</p></li>
 <li><p><strong>timestep</strong> (<em>int</em>) – Timestep index the chunk belongs to.</p></li>
-<li><p><strong>chunked</strong> (<em>bool</em><em>, </em><em>optional</em>) – Reserved for future multi-chunk sends. Must remain <code class="docutils literal notranslate"><span class="pre">True</span></code> for
-the current workflow. Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -371,41 +369,26 @@ the node’s share of chunks for the timestep is complete.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.delete">
-<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.delete" title="Link to this definition">¶</a></dt>
-<dd><p>Delete a feedback value if present.</p>
+<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.finalize_registration">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">finalize_registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.finalize_registration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.finalize_registration" title="Link to this definition">¶</a></dt>
+<dd><p>Publish this node actor’s registered chunk ownership to the head actor.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> (<em>Hashable</em>) – Identifier to remove from the non-chunked feedback store.</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The method is idempotent; subsequent calls return immediately
+after successful finalization.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If the number of registered chunk metadata entries does not match
+    the local chunk count collected from bridges.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Missing keys are ignored to keep the call idempotent.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.get" title="Link to this definition">¶</a></dt>
-<dd><p>Retrieve a feedback value previously stored with <a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.set" title="deisa.ray.scheduling_actor.NodeActorBase.set"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set()</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> (<em>Hashable</em>) – Identifier of the requested value.</p></li>
-<li><p><strong>default</strong> (<em>Any</em><em>, </em><em>optional</em>) – Value returned when <code class="docutils literal notranslate"><span class="pre">key</span></code> is not present. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>chunked</strong> (<em>bool</em><em>, </em><em>optional</em>) – Placeholder for chunked feedback retrieval. Must remain
-<code class="docutils literal notranslate"><span class="pre">False</span></code> today. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Stored value or <code class="docutils literal notranslate"><span class="pre">default</span></code> if missing.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Any</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>NotImplementedError</strong> – Chunked feedback retrieval is not yet implemented.</p>
-</dd>
-</dl>
+<p>The method waits until analytics has signaled readiness before
+registering partial arrays. A lock ensures concurrent calls from
+multiple bridges sharing the same actor perform registration once.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -430,47 +413,23 @@ operational before returning its handle.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta">
-<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">register_chunk_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_chunks_per_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_chunks_of_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_position</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.register_chunk_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta" title="Link to this definition">¶</a></dt>
-<dd><p>Register chunk metadata contributed by a bridge on this node.</p>
+<span class="sig-name descname"><span class="pre">register_chunk_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_position</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.register_chunk_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta" title="Link to this definition">¶</a></dt>
+<dd><p>Register metadata for a chunk owned by this node actor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bridge_id</strong> (<em>int</em>) – Identifier of the bridge sending the chunk.</p></li>
-<li><p><strong>array_name</strong> (<em>str</em>) – Name of the array being populated.</p></li>
-<li><p><strong>chunk_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Shape of the chunk owned by this bridge.</p></li>
-<li><p><strong>nb_chunks_per_dim</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Number of chunks per dimension in the global decomposition.</p></li>
-<li><p><strong>nb_chunks_of_node</strong> (<em>int</em>) – Number of chunks contributed by this node for the array.</p></li>
-<li><p><strong>dtype</strong> (<em>Any</em>) – NumPy dtype of the chunk.</p></li>
-<li><p><strong>chunk_position</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Position of this chunk in the global grid.</p></li>
+<li><p><strong>bridge_id</strong> (<em>int</em>) – Identifier of the bridge that owns the chunk.</p></li>
+<li><p><strong>array_name</strong> (<em>str</em>) – Name of the array the chunk belongs to.</p></li>
+<li><p><strong>chunk_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Shape of this bridge’s chunk.</p></li>
+<li><p><strong>global_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Full shape of the distributed array.</p></li>
+<li><p><strong>chunk_position</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Position of the chunk in the global chunk grid.</p></li>
 </ul>
 </dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Once all bridges on the node have registered, the node actor forwards
-the consolidated metadata to the head actor and toggles the per-array
-event so concurrent callers can proceed. Until that point additional
-callers block on <code class="docutils literal notranslate"><span class="pre">ready_event</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="deisa.ray.scheduling_actor.NodeActorBase.set">
-<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_ray_trace_ctx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/scheduling_actor.html#NodeActorBase.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.scheduling_actor.NodeActorBase.set" title="Link to this definition">¶</a></dt>
-<dd><p>Store a feedback value shared between analytics and simulation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> (<em>Hashable</em>) – Identifier for the feedback value.</p></li>
-<li><p><strong>value</strong> (<em>Any</em>) – Value to store.</p></li>
-<li><p><strong>chunked</strong> (<em>bool</em><em>, </em><em>optional</em>) – Placeholder for future chunked feedback support. Must remain
-<code class="docutils literal notranslate"><span class="pre">False</span></code> today. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>persist</strong> (<em>bool</em>) – Whether the stored value should survive the next <code class="docutils literal notranslate"><span class="pre">get</span></code> call.
-<code class="docutils literal notranslate"><span class="pre">True</span></code> retains the value until explicitly deleted.</p></li>
-</ul>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the derived global chunk grid for <code class="docutils literal notranslate"><span class="pre">array_name</span></code> is
+    inconsistent with earlier registrations.</p>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> parameters are accepted for forward
-compatibility with future signatures but are currently unused.</p>
 </dd></dl>
 
 </dd></dl>
@@ -538,13 +497,11 @@ compatibility with future signatures but are currently unused.</p>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.actor_handle"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.actor_handle</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.head"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.head</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.partial_arrays"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.partial_arrays</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.feedback_non_chunked"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.feedback_non_chunked</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.feedback"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.feedback</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.add_chunk"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.add_chunk()</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.delete"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.delete()</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.get"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.get()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.finalize_registration"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.finalize_registration()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.ready"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.ready()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.register_chunk_meta()</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.scheduling_actor.NodeActorBase.set"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.set()</span></code></a></li>
 </ul>
 </li>
 </ul>

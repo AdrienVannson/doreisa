@@ -201,7 +201,6 @@
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -327,6 +326,15 @@ and used mainly as a coordination point.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="deisa.ray.utils.get_ray_address">
+<span class="sig-prename descclassname"><span class="pre">deisa.ray.utils.</span></span><span class="sig-name descname"><span class="pre">get_ray_address</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/utils.html#get_ray_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.utils.get_ray_address" title="Link to this definition">¶</a></dt>
+<dd><p>Return the explicit Ray address for the current process when available.</p>
+<p>Ray’s local autodiscovery is process-global and can see clusters started by
+other pytest-xdist workers. Prefer explicit addresses so state API calls and
+lazy ray.init() connect to the cluster this process is already using.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="deisa.ray.utils.get_ready_actor_with_retry">
 <span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.utils.</span></span><span class="sig-name descname"><span class="pre">get_ready_actor_with_retry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deadline_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">180</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/utils.html#get_ready_actor_with_retry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.utils.get_ready_actor_with_retry" title="Link to this definition">¶</a></dt>
 <dd><p>Get a Ray actor by name with retry logic and readiness check.</p>
@@ -356,16 +364,8 @@ Default is 180.</p></li>
 <p>The function uses exponential backoff with jitter for retries. The delay
 starts at 0.2 seconds and increases by a factor of 1.5 up to a maximum
 of 5.0 seconds. A small random jitter (0-0.1 seconds) is added to avoid
-thundering herd problems.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="deisa.ray.utils.get_system_metadata">
-<span class="sig-prename descclassname"><span class="pre">deisa.ray.utils.</span></span><span class="sig-name descname"><span class="pre">get_system_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="_modules/deisa/ray/utils.html#get_system_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.utils.get_system_metadata" title="Link to this definition">¶</a></dt>
-<dd><p>Return system-level metadata placeholder.</p>
-<p class="rubric">Notes</p>
-<p>Currently returns an empty dictionary; the hook exists to keep backward
-compatibility with callers expecting environment metadata.</p>
+thundering herd problems. The function more or less corresponds to 3 retries
+since each try times out after 60 seconds by default.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -443,8 +443,8 @@ compatibility with callers expecting environment metadata.</p>
 <li><a class="reference internal" href="#deisa.ray.utils.get_head_actor_options"><code class="docutils literal notranslate"><span class="pre">get_head_actor_options()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.utils.get_head_node_id"><code class="docutils literal notranslate"><span class="pre">get_head_node_id()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.utils.get_node_actor_options"><code class="docutils literal notranslate"><span class="pre">get_node_actor_options()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.utils.get_ray_address"><code class="docutils literal notranslate"><span class="pre">get_ray_address()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.utils.get_ready_actor_with_retry"><code class="docutils literal notranslate"><span class="pre">get_ready_actor_with_retry()</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.utils.get_system_metadata"><code class="docutils literal notranslate"><span class="pre">get_system_metadata()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.utils.log"><code class="docutils literal notranslate"><span class="pre">log()</span></code></a></li>
 </ul>
 </li>

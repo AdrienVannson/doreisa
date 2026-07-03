@@ -199,7 +199,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -245,7 +244,7 @@
           
 <section class="genindex-section">
   <h1 id="index">Index</h1>
-  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#B"><strong>B</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a></div>
+  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#B"><strong>B</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a></div>
 </section>
 <section id="A" class="genindex-section">
   <h2>A</h2>
@@ -274,6 +273,14 @@
         <li><a href="deisa.ray.types.html#deisa.ray.types.PartialArray.bid_to_pos">bid_to_pos (deisa.ray.types.PartialArray attribute)</a>
 </li>
     </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="deisa.ray.html#deisa.ray.Bridge">Bridge (class in deisa.ray)</a>
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge">(class in deisa.ray.bridge)</a>
+</li>
+        </ul></li>
+    </ul></td>
   </tr></table>
 </section>
 
@@ -281,8 +288,6 @@
   <h2>C</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.callback">callback() (deisa.ray.window_handler.Deisa method)</a>
-</li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.chunk_fname">chunk_fname() (in module deisa.ray.types)</a>
 </li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.chunk_refs">chunk_refs (deisa.ray.types.DaskArrayData attribute)</a>
@@ -291,14 +296,18 @@
 </li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.PartialArray.chunks_contained_meta">chunks_contained_meta (deisa.ray.types.PartialArray attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep.chunks_ready_event">chunks_ready_event (deisa.ray.types.ArrayPerTimestep attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.chunks_size">chunks_size (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
-        <li><a href="deisa.ray.config.html#deisa.ray.config.Config">Config (class in deisa.ray.config)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Bridge.close">close() (deisa.ray.Bridge method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.close">(deisa.ray.bridge.Bridge method)</a>
 </li>
+        </ul></li>
         <li><a href="deisa.ray.errors.html#deisa.ray.errors.ConfigError">ConfigError</a>
 </li>
         <li><a href="deisa.ray.errors.html#deisa.ray.errors.ContractError">ContractError</a>
@@ -315,13 +324,24 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData">DaskArrayData (class in deisa.ray.types)</a>
 </li>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa">Deisa (class in deisa.ray.window_handler)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Deisa">Deisa (class in deisa.ray)</a>
+
+        <ul>
+          <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa">(class in deisa.ray.window_handler)</a>
 </li>
+        </ul></li>
         <li>
     deisa.ray
 
         <ul>
           <li><a href="deisa.ray.html#module-deisa.ray">module</a>
+</li>
+        </ul></li>
+        <li>
+    deisa.ray.bridge
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#module-deisa.ray.bridge">module</a>
 </li>
         </ul></li>
         <li>
@@ -345,6 +365,8 @@
           <li><a href="deisa.ray.head_node.html#module-deisa.ray.head_node">module</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     deisa.ray.scheduling_actor
 
@@ -352,8 +374,6 @@
           <li><a href="deisa.ray.scheduling_actor.html#module-deisa.ray.scheduling_actor">module</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     deisa.ray.types
 
@@ -384,11 +404,11 @@
         </ul></li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DeisaArray">DeisaArray (class in deisa.ray.types)</a>
 </li>
-        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.delete">delete() (deisa.ray.scheduling_actor.NodeActorBase method)</a>
+        <li><a href="deisa.ray.config.html#deisa.ray.config.distributed_scheduling_enabled_from_env">distributed_scheduling_enabled_from_env() (in module deisa.ray.config)</a>
 </li>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.determine_callback_args">determine_callback_args() (deisa.ray.window_handler.Deisa method)</a>
+        <li><a href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep.dtype">dtype (deisa.ray.types.ArrayPerTimestep attribute)</a>
 </li>
-        <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.dtype">dtype (deisa.ray.types.DaskArrayData attribute)</a>
+        <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.dtype_by_timestep">dtype_by_timestep (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -398,14 +418,12 @@
   <h2>E</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.config.html#deisa.ray.config.Config.enable_experimental_distributed_scheduling">enable_experimental_distributed_scheduling() (deisa.ray.config.Config method)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Deisa.execute_callbacks">execute_callbacks() (deisa.ray.Deisa method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.execute_callbacks">(deisa.ray.window_handler.Deisa method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.execute_callbacks">execute_callbacks() (deisa.ray.window_handler.Deisa method)</a>
-</li>
-        <li><a href="deisa.ray.config.html#deisa.ray.config.Config.experimental_distributed_scheduling_enabled">experimental_distributed_scheduling_enabled (deisa.ray.config.Config property)</a>
-</li>
+        </ul></li>
     </ul></td>
   </tr></table>
 </section>
@@ -414,10 +432,12 @@
   <h2>F</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.feedback_non_chunked">feedback_non_chunked (deisa.ray.scheduling_actor.NodeActorBase attribute)</a>
+        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.feedback">feedback (deisa.ray.scheduling_actor.NodeActorBase attribute)</a>
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.finalize_registration">finalize_registration() (deisa.ray.scheduling_actor.NodeActorBase method)</a>
+</li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.fully_defined">fully_defined (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
     </ul></td>
@@ -428,10 +448,12 @@
   <h2>G</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.generate_queue_per_array">generate_queue_per_array() (deisa.ray.window_handler.Deisa method)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Bridge.get">get() (deisa.ray.Bridge method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.get">(deisa.ray.bridge.Bridge method)</a>
 </li>
-        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.get">get() (deisa.ray.scheduling_actor.NodeActorBase method)</a>
-</li>
+        </ul></li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.get_full_array">get_full_array() (deisa.ray.types.DaskArrayData method)</a>
 </li>
         <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_head_actor_options">get_head_actor_options() (in module deisa.ray.utils)</a>
@@ -442,9 +464,9 @@
 </li>
         <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_node_actor_options">get_node_actor_options() (in module deisa.ray.utils)</a>
 </li>
-        <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_ready_actor_with_retry">get_ready_actor_with_retry() (in module deisa.ray.utils)</a>
+        <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_ray_address">get_ray_address() (in module deisa.ray.utils)</a>
 </li>
-        <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_system_metadata">get_system_metadata() (in module deisa.ray.utils)</a>
+        <li><a href="deisa.ray.utils.html#deisa.ray.utils.get_ready_actor_with_retry">get_ready_actor_with_retry() (in module deisa.ray.utils)</a>
 </li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.GraphInfo">GraphInfo (class in deisa.ray.types)</a>
 </li>
@@ -462,16 +484,6 @@
   </tr></table>
 </section>
 
-<section id="I" class="genindex-section">
-  <h2>I</h2>
-  <table style="width: 100%" class="indextable genindextable"><tr>
-    <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.config.html#deisa.ray.config.Config.is_locked">is_locked() (deisa.ray.config.Config method)</a>
-</li>
-    </ul></td>
-  </tr></table>
-</section>
-
 <section id="L" class="genindex-section">
   <h2>L</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
@@ -480,8 +492,6 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.config.html#deisa.ray.config.Config.lock">lock() (deisa.ray.config.Config method)</a>
-</li>
         <li><a href="deisa.ray.utils.html#deisa.ray.utils.log">log() (in module deisa.ray.utils)</a>
 </li>
     </ul></td>
@@ -497,6 +507,8 @@
 
         <ul>
           <li><a href="deisa.ray.html#module-deisa.ray">deisa.ray</a>
+</li>
+          <li><a href="deisa.ray.bridge.html#module-deisa.ray.bridge">deisa.ray.bridge</a>
 </li>
           <li><a href="deisa.ray.config.html#module-deisa.ray.config">deisa.ray.config</a>
 </li>
@@ -527,12 +539,18 @@
 </li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_chunks">nb_chunks (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_chunks_per_dim">nb_chunks_per_dim (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_scheduling_actors">nb_scheduling_actors (deisa.ray.types.DaskArrayData attribute)</a>
 </li>
+        <li><a href="deisa.ray.html#deisa.ray.Bridge.node_id">node_id (deisa.ray.Bridge attribute)</a>
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.node_id">(deisa.ray.bridge.Bridge attribute)</a>
+</li>
+        </ul></li>
         <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase">NodeActorBase (class in deisa.ray.scheduling_actor)</a>
 </li>
     </ul></td>
@@ -569,12 +587,22 @@
 </li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.PartialArray.ready_event">ready_event (deisa.ray.types.PartialArray attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="deisa.ray.types.html#deisa.ray.types.GraphInfo.refs">refs (deisa.ray.types.GraphInfo attribute)</a>
 </li>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register_callback">register_callback() (deisa.ray.window_handler.Deisa method)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Deisa.register">register() (deisa.ray.Deisa method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register">(deisa.ray.window_handler.Deisa method)</a>
 </li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="deisa.ray.html#deisa.ray.Deisa.register_callback">register_callback() (deisa.ray.Deisa method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register_callback">(deisa.ray.window_handler.Deisa method)</a>
+</li>
+        </ul></li>
         <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta">register_chunk_meta() (deisa.ray.scheduling_actor.NodeActorBase method)</a>
 </li>
     </ul></td>
@@ -593,14 +621,18 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.set">set() (deisa.ray.scheduling_actor.NodeActorBase method)</a>
+        <li><a href="deisa.ray.html#deisa.ray.Bridge.send">send() (deisa.ray.Bridge method)</a>
+
+        <ul>
+          <li><a href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.send">(deisa.ray.bridge.Bridge method)</a>
+</li>
+        </ul></li>
+        <li><a href="deisa.ray.html#deisa.ray.Deisa.set">set() (deisa.ray.Deisa method)</a>
 
         <ul>
           <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.set">(deisa.ray.window_handler.Deisa method)</a>
 </li>
         </ul></li>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.should_call">should_call() (deisa.ray.window_handler.Deisa method)</a>
-</li>
     </ul></td>
   </tr></table>
 </section>
@@ -609,6 +641,8 @@
   <h2>T</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="deisa.ray.types.html#deisa.ray.types.DeisaArray.timestep">timestep (deisa.ray.types.DeisaArray property)</a>
+</li>
         <li><a href="deisa.ray.types.html#deisa.ray.types.DeisaArray.to_hdf5">to_hdf5() (deisa.ray.types.DeisaArray method)</a>
 
         <ul>
@@ -627,7 +661,7 @@
   <h2>U</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.unregister_callback">unregister_callback() (deisa.ray.window_handler.Deisa method)</a>
+        <li><a href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.update_dtype">update_dtype() (deisa.ray.types.DaskArrayData method)</a>
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
@@ -641,7 +675,7 @@
   <h2>W</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="deisa.ray.types.html#deisa.ray.types.WindowSpec">WindowSpec (class in deisa.ray.types)</a>
+        <li><a href="deisa.ray.types.html#deisa.ray.types.Window">Window (class in deisa.ray.types)</a>
 </li>
     </ul></td>
   </tr></table>

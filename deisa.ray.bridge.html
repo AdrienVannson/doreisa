@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="deisa.ray.comm module" href="deisa.ray.comm.html"><link rel="prev" title="deisa.ray package" href="deisa.ray.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="deisa.ray.config module" href="deisa.ray.config.html"><link rel="prev" title="deisa.ray package" href="deisa.ray.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>deisa.ray.bridge module - deisa-ray documentation</title>
@@ -172,7 +172,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -201,7 +201,6 @@
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -245,13 +244,171 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="deisa-ray-bridge-module">
-<h1>deisa.ray.bridge module<a class="headerlink" href="#deisa-ray-bridge-module" title="Link to this heading">¶</a></h1>
+          <section id="module-deisa.ray.bridge">
+<span id="deisa-ray-bridge-module"></span><h1>deisa.ray.bridge module<a class="headerlink" href="#module-deisa.ray.bridge" title="Link to this heading">¶</a></h1>
+<p>Bridge between MPI ranks and the Ray-based analytics system.</p>
+<p>This module exposes the <a class="reference internal" href="#deisa.ray.bridge.Bridge" title="deisa.ray.bridge.Bridge"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bridge</span></code></a> class used by simulation ranks to
+register their data chunks and exchange information with analytics running on
+top of Ray.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="deisa.ray.bridge.Bridge">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.bridge.</span></span><span class="sig-name descname"><span class="pre">Bridge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ICommunicator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays_metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.bridge.Bridge" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IBridge</span></code></p>
+<p>Bridge between MPI ranks and Ray cluster for distributed array processing.</p>
+<p>Each Bridge instance is created by an MPI rank to connect to the Ray cluster
+and send data chunks. Each Bridge is responsible for managing a chunk of data
+from the decomposed distributed array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comm</strong> (<em>deisa.core.ICommunicator</em>) – Communication backend for the simulation ranks. The bridge ID is
+derived from <code class="docutils literal notranslate"><span class="pre">comm.Get_rank()</span></code>.</p></li>
+<li><p><strong>arrays_metadata</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Metadata describing the array layout managed by this bridge.</p></li>
+<li><p><strong>_node_id</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Node identifier used for testing or custom scheduling. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>scheduling_actor_cls</strong> (<em>Type</em><em>, </em><em>optional</em>) – Class used to materialize the scheduling actor. Defaults to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">deisa.ray.scheduling_actor.SchedulingActor</span></code>.</p></li>
+<li><p><strong>_init_retries</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of attempts to create and ready the node actor. Defaults to 3.</p></li>
+<li><p><strong>object_store_memory_timeout_s</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Maximum time to wait for Ray object store memory before raising
+<code class="docutils literal notranslate"><span class="pre">MemoryError</span></code>. Defaults to 100 seconds. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to wait forever.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="deisa.ray.bridge.Bridge.node_id">
+<span class="sig-name descname"><span class="pre">node_id</span></span><a class="headerlink" href="#deisa.ray.bridge.Bridge.node_id" title="Link to this definition">¶</a></dt>
+<dd><p>The ID of the node this Bridge is associated with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>The Bridge automatically initializes Ray if it hasn’t been initialized yet.
+The scheduling actor is created with a detached lifetime to persist beyond
+the Bridge initialization. The actor uses node affinity scheduling to ensure
+it runs on the specified node.</p>
+<p class="rubric">Examples</p>
+<p>Create a bridge for a simulation rank that owns one array <code class="docutils literal notranslate"><span class="pre">temperature</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arrays_metadata</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;global_shape&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+        <span class="s2">&quot;chunk_shape&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+        <span class="s2">&quot;chunk_position&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">bridge</span> <span class="o">=</span> <span class="n">Bridge</span><span class="p">(</span>
+    <span class="n">arrays_metadata</span><span class="o">=</span><span class="n">arrays_metadata</span><span class="p">,</span>
+    <span class="n">comm</span><span class="o">=</span><span class="n">comm</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">bridge</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+    <span class="n">array_name</span><span class="o">=</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span>
+    <span class="n">chunk</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+    <span class="n">timestep</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.bridge.Bridge.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.bridge.Bridge.close" title="Link to this definition">¶</a></dt>
+<dd><p>Close the bridge by signaling analytics that the simulation finished.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timestep</strong> (<em>int</em>) – The timestep index corresponding to the sentinel chunk.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.bridge.Bridge.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.bridge.Bridge.get" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve feedback from analytics to influence the simulation.</p>
+<p>Bridge <code class="docutils literal notranslate"><span class="pre">0</span></code> queries the global head actor directly, then broadcasts
+the lookup result to every bridge in the communicator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – The key that is being retrieved from the Analytics.</p></li>
+<li><p><strong>timestep</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Timestep associated with the requested feedback value. When
+omitted, returns the entire retained queue for <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+<li><p><strong>default</strong> (<em>Any</em><em>, </em><em>optional</em>) – Value returned when no feedback exists for <code class="docutils literal notranslate"><span class="pre">key</span></code> and
+<code class="docutils literal notranslate"><span class="pre">timestep</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This remains a collective operation when a communicator is used: all
+bridges must call <code class="docutils literal notranslate"><span class="pre">get</span></code> in the same order so the broadcast completes.
+The retained feedback queue is fixed-size, so old entries may be
+dropped if analytics publishes more values than the queue can hold.
+Callback execution is intentionally one timestep behind: analytics
+processes a timestep only after a later timestep or the close sentinel
+arrives. As a result, feedback for the final simulated timestep may
+only be published after <code class="docutils literal notranslate"><span class="pre">close</span></code> and is not meant to drive another
+simulation step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The feedback value for <code class="docutils literal notranslate"><span class="pre">timestep</span></code>, the full retained queue when
+<code class="docutils literal notranslate"><span class="pre">timestep</span></code> is omitted, or <code class="docutils literal notranslate"><span class="pre">default</span></code> when no feedback exists.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any | None</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Feedback timing is asynchronous and not reproducible run to run. The
+head queue may be populated at slightly different times, and this
+bridge may read it at slightly different times. Simulation code should
+decide how to react whenever a signal becomes available, and must not
+rely on exactly when an analytics event becomes visible for simulation
+correctness.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.bridge.Bridge.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.bridge.Bridge.send" title="Link to this definition">¶</a></dt>
+<dd><p>Make a chunk of data available to the analytics.</p>
+<p>This method stores the <code class="docutils literal notranslate"><span class="pre">chunk</span></code> in Ray’s object store, and
+sends a reference to the node actor. The method blocks until the
+data is processed by the node actor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array_name</strong> (<em>str</em>) – The name of the array this chunk belongs to.</p></li>
+<li><p><strong>chunk</strong> (<em>numpy.ndarray</em>) – The chunk of data to be sent to the analytics.</p></li>
+<li><p><strong>timestep</strong> (<em>int</em>) – The timestep index for this chunk of data.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The chunk is stored in Ray’s object store with the node actor as the owner,
+ensuring the reference persists even after the simulation script terminates.
+This method blocks until the node actor has the chunk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="deisa.ray.errors.html#deisa.ray.errors.ContractError" title="deisa.ray.errors.ContractError"><strong>ContractError</strong></a> – When the scheduling node detects a contract violation for the
+    provided chunk.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Blocks until the node actor processes the chunk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -259,12 +416,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="deisa.ray.comm.html">
+          <a class="next-page" href="deisa.ray.config.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">deisa.ray.comm module</div>
+                <div class="title">deisa.ray.config module</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -297,8 +454,33 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">deisa.ray.bridge module</a><ul>
+<li><a class="reference internal" href="#deisa.ray.bridge.Bridge"><code class="docutils literal notranslate"><span class="pre">Bridge</span></code></a><ul>
+<li><a class="reference internal" href="#deisa.ray.bridge.Bridge.node_id"><code class="docutils literal notranslate"><span class="pre">Bridge.node_id</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.bridge.Bridge.close"><code class="docutils literal notranslate"><span class="pre">Bridge.close()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.bridge.Bridge.get"><code class="docutils literal notranslate"><span class="pre">Bridge.get()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.bridge.Bridge.send"><code class="docutils literal notranslate"><span class="pre">Bridge.send()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

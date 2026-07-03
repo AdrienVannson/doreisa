@@ -200,7 +200,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -289,15 +288,18 @@
 <span class="sd">        Mapping of ``bridge_id`` to the double ObjectRef for that chunk. Once</span>
 <span class="sd">        forwarded to the head actor the value is replaced with pickled bytes</span>
 <span class="sd">        to free memory.</span>
+<span class="sd">    dtype : np.dtype or None</span>
+<span class="sd">        Dtype shared by all chunks received for this array timestep.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the readiness event and the async storage for local chunks.&quot;&quot;&quot;</span>
         <span class="c1"># Triggered when all the chunks are ready</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">chunks_ready_event</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunks_ready_future</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span><span class="p">()</span>
 
         <span class="c1"># {bridgeID: chunk}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">:</span> <span class="n">AsyncDict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="n">AsyncDict</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">:</span> <span class="n">AsyncDict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="n">AsyncDict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -435,43 +437,101 @@
 
 
 
-<div class="viewcode-block" id="WindowSpec">
-<a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.WindowSpec">[docs]</a>
+<div class="viewcode-block" id="Window">
+<a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.Window">[docs]</a>
 <span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">WindowSpec</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Window</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Description of an array with optional windowing support.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    name : str</span>
-<span class="sd">        The name of the array.</span>
-<span class="sd">    window_size : int or None, optional</span>
-<span class="sd">        If specified, creates a sliding window of arrays for this array name.</span>
-<span class="sd">        The window will contain the last `window_size` timesteps. If None,</span>
-<span class="sd">        only the current timestep array is provided. Default is None.</span>
+<span class="sd">        Name of the array passed to a registered analytics callback.</span>
+<span class="sd">    size : int, optional</span>
+<span class="sd">        Number of latest timesteps to pass for this array. Defaults to 1.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; def normalize(arr):</span>
-<span class="sd">    ...     return arr / arr.max()</span>
-<span class="sd">    &gt;&gt;&gt; # Array with windowing: last 5 timesteps</span>
-<span class="sd">    &gt;&gt;&gt; array_def = ArrayDefinition(name=&quot;temperature&quot;, window_size=5)</span>
-<span class="sd">    &gt;&gt;&gt; # Array without windowing: current timestep only</span>
-<span class="sd">    &gt;&gt;&gt; array_def = ArrayDefinition(name=&quot;pressure&quot;, window_size=None)</span>
+<span class="sd">    Request the latest five ``temperature`` arrays in a callback::</span>
+
+<span class="sd">        deisa.register_callback(callback, Window(&quot;temperature&quot;, size=5))</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
 
+
+
+<span class="nb">type</span> <span class="n">CallbackArgs</span> <span class="o">=</span> <span class="n">Window</span> <span class="o">|</span> <span class="nb">str</span>
 
 
 <div class="viewcode-block" id="DeisaArray">
 <a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.DeisaArray">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">DeisaArray</span><span class="p">:</span>
-    <span class="n">dask</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span>
-    <span class="n">t</span><span class="p">:</span> <span class="nb">int</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeisaArray</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dask</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a Dask array instance carrying DEISA timestep metadata.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dask : Mapping or HighLevelGraph</span>
+<span class="sd">            Dask graph backing the array.</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Dask collection name.</span>
+<span class="sd">        chunks : tuple or list</span>
+<span class="sd">            Dask chunk structure.</span>
+<span class="sd">        t : int</span>
+<span class="sd">            Simulation timestep associated with this array.</span>
+<span class="sd">        dtype : numpy.dtype or None, optional</span>
+<span class="sd">            Array dtype forwarded to :class:`dask.array.Array`.</span>
+<span class="sd">        meta : Any, optional</span>
+<span class="sd">            Optional Dask meta object.</span>
+<span class="sd">        shape : tuple[int, ...] or None, optional</span>
+<span class="sd">            Full array shape.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DeisaArray</span>
+<span class="sd">            New array object with the same construction semantics as</span>
+<span class="sd">            :class:`dask.array.Array`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dask</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dask</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store timestep metadata on the array.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dask : Mapping or HighLevelGraph</span>
+<span class="sd">            Dask graph backing the array.</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Dask collection name.</span>
+<span class="sd">        chunks : tuple or list</span>
+<span class="sd">            Dask chunk structure.</span>
+<span class="sd">        t : int</span>
+<span class="sd">            Simulation timestep associated with this array.</span>
+<span class="sd">        dtype : numpy.dtype or None, optional</span>
+<span class="sd">            Array dtype forwarded during construction.</span>
+<span class="sd">        meta : Any, optional</span>
+<span class="sd">            Optional Dask meta object.</span>
+<span class="sd">        shape : tuple[int, ...] or None, optional</span>
+<span class="sd">            Full array shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timestep</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the simulation timestep associated with this array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            Timestep provided when the array was created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
 
 <div class="viewcode-block" id="DeisaArray.to_zarr">
 <a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.DeisaArray.to_zarr">[docs]</a>
@@ -479,18 +539,40 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_stored</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save data using the zarr storage format</span>
+<span class="sd">        Save this array using the Zarr storage format.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : str or pathlib.Path</span>
+<span class="sd">            Directory, store, or path-like target passed to</span>
+<span class="sd">            :func:`dask.array.to_zarr`.</span>
+<span class="sd">        component : str or None, optional</span>
+<span class="sd">            Component path inside the Zarr store.</span>
+<span class="sd">        storage_options : dict or None, optional</span>
+<span class="sd">            Storage options forwarded to Dask for fsspec-backed targets.</span>
+<span class="sd">        region : tuple[slice, ...] or None, optional</span>
+<span class="sd">            Region to write within an existing array.</span>
+<span class="sd">        compute : bool, optional</span>
+<span class="sd">            Whether to compute immediately. Defaults to ``True``.</span>
+<span class="sd">        return_stored : bool, optional</span>
+<span class="sd">            Whether Dask should return stored chunks. Defaults to ``False``.</span>
+<span class="sd">        mode : str, optional</span>
+<span class="sd">            Zarr write mode. Defaults to ``&quot;a&quot;``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Any</span>
+<span class="sd">            Return value from :func:`dask.array.to_zarr`.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
-<span class="sd">        This method is a simple wrapper to `dask.to_zarr`. To more details about parameters see:</span>
-
-<span class="sd">        https://docs.dask.org/en/latest/generated/dask.array.to_zarr.html#dask.array.to_zarr</span>
+<span class="sd">        This method persists the array first, resolves local path-like targets</span>
+<span class="sd">        to absolute paths, and then delegates to :func:`dask.array.to_zarr`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">full_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">da</span><span class="o">.</span><span class="n">to_zarr</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">persist</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">persist</span><span class="p">(),</span>
             <span class="n">full_path</span><span class="p">,</span>
             <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span>
             <span class="n">storage_options</span><span class="o">=</span><span class="n">storage_options</span><span class="p">,</span>
@@ -530,21 +612,21 @@
 <a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.chunk_fname">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">chunk_fname</span><span class="p">(</span><span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create the filename for a chunk.</span>
+<span class="sd">    Create the hidden HDF5 filename for one stored chunk.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    fname : str</span>
-<span class="sd">        The name of the final file where the data will be stored.</span>
+<span class="sd">        Final HDF5 VDS file path.</span>
 <span class="sd">    dataset : str</span>
-<span class="sd">        The name of the dataset in the hdf5 where the data will be stored.</span>
-<span class="sd">    block_id : tuple[int, ...]</span>
-<span class="sd">        Chunk position to create the file.</span>
+<span class="sd">        Dataset name inside the final HDF5 file.</span>
+<span class="sd">    block_id : tuple[int, ...], optional</span>
+<span class="sd">        Chunk grid position. Defaults to ``()``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    str</span>
-<span class="sd">        Filename for the chunk of position block_id.</span>
+<span class="sd">    pathlib.Path</span>
+<span class="sd">        Hidden chunk file path next to ``fname``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
@@ -562,18 +644,23 @@
 <a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.save_chunk">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">save_chunk</span><span class="p">(</span><span class="n">chunk</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Save one chunk to a individual hdf5 file.</span>
+<span class="sd">    Save one chunk to an individual HDF5 file.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    chunk : np.ndarray</span>
-<span class="sd">        Chunk to be stored.</span>
+<span class="sd">    chunk : numpy.ndarray</span>
+<span class="sd">        Chunk payload to write.</span>
 <span class="sd">    fname : str</span>
-<span class="sd">        The name of the final file where the data will be stored.</span>
+<span class="sd">        Final HDF5 VDS file path used to derive the chunk filename.</span>
 <span class="sd">    dataset : str</span>
-<span class="sd">        The name of the dataset in the hdf5 where the data will be stored.</span>
-<span class="sd">    block_id : tuple[int, ...]</span>
-<span class="sd">        Chunk position, used to merge into a VDS.</span>
+<span class="sd">        Dataset name to create in the chunk file.</span>
+<span class="sd">    block_id : tuple[int, ...] or None, optional</span>
+<span class="sd">        Chunk grid position used in the chunk filename.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Writes the chunk file for later VDS assembly.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
@@ -596,22 +683,27 @@
     <span class="n">data_dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates a VDS aggregating all chunk files.</span>
+<span class="sd">    Create an HDF5 virtual dataset aggregating all chunk files.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    fname : str</span>
-<span class="sd">        The name of the final file where the data will be stored.</span>
+<span class="sd">        Final HDF5 VDS file path.</span>
 <span class="sd">    dataset : str</span>
-<span class="sd">        The name of the dataset in the hdf5 where the data will be stored.</span>
-<span class="sd">    chunk_shape : tuple[int,...]</span>
-<span class="sd">        Shape of the chunks, used to map the chunks into the VDS.4</span>
-<span class="sd">    data_shape : tuple[int,...]</span>
-<span class="sd">        Shape of the data.</span>
-<span class="sd">    nb_chunks_per_dim : tuple[int,...]</span>
-<span class="sd">        Number of chunks for each dimension</span>
-<span class="sd">    data_dtype : np.dtype</span>
-<span class="sd">        The numpy dtype of the data.</span>
+<span class="sd">        Dataset name to create in ``fname``.</span>
+<span class="sd">    chunk_shape : tuple[int, ...]</span>
+<span class="sd">        Shape of each chunk.</span>
+<span class="sd">    data_shape : tuple[int, ...]</span>
+<span class="sd">        Shape of the full logical dataset.</span>
+<span class="sd">    nb_chunks_per_dim : tuple[int, ...]</span>
+<span class="sd">        Number of chunks along each dimension.</span>
+<span class="sd">    data_dtype : numpy.dtype</span>
+<span class="sd">        NumPy dtype of the dataset.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Creates or updates ``fname`` with the virtual dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
@@ -646,9 +738,14 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    fname : str</span>
-<span class="sd">        The name of the final file where the data will be stored.</span>
+<span class="sd">        Final HDF5 file path.</span>
 <span class="sd">    sources : dict[str, DeisaArray]</span>
-<span class="sd">        Dict mapping the datasets in final file to final files</span>
+<span class="sd">        Mapping from dataset names in ``fname`` to arrays to persist.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        Creates chunk files and the virtual datasets in ``fname``.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
@@ -664,7 +761,7 @@
     <span class="k">for</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">deisa_array</span> <span class="ow">in</span> <span class="n">sources</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="c1"># dask.to_delayed() be able to have a reference to the chunks</span>
         <span class="c1"># and to be able to iterate through them.</span>
-        <span class="n">delayed_grid</span> <span class="o">=</span> <span class="n">deisa_array</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">to_delayed</span><span class="p">()</span>
+        <span class="n">delayed_grid</span> <span class="o">=</span> <span class="n">deisa_array</span><span class="o">.</span><span class="n">to_delayed</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">block_id</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="n">delayed_grid</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
             <span class="n">chunk</span> <span class="o">=</span> <span class="n">delayed_grid</span><span class="p">[</span><span class="n">block_id</span><span class="p">]</span>
@@ -679,10 +776,10 @@
         <span class="n">create_vds</span><span class="p">(</span>
             <span class="n">full_path</span><span class="p">,</span>
             <span class="n">dataset</span><span class="p">,</span>
-            <span class="n">deisa_array</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">chunksize</span><span class="p">,</span>
-            <span class="n">deisa_array</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-            <span class="n">deisa_array</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">numblocks</span><span class="p">,</span>
-            <span class="n">deisa_array</span><span class="o">.</span><span class="n">dask</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">deisa_array</span><span class="o">.</span><span class="n">chunksize</span><span class="p">,</span>
+            <span class="n">deisa_array</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="n">deisa_array</span><span class="o">.</span><span class="n">numblocks</span><span class="p">,</span>
+            <span class="n">deisa_array</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="o">*</span><span class="n">writing_tasks</span><span class="p">)</span></div>
@@ -692,7 +789,7 @@
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">_CallbackConfig</span><span class="p">:</span>
     <span class="n">simulation_callback</span><span class="p">:</span> <span class="n">Callable</span>
-    <span class="n">arrays_description</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">WindowSpec</span><span class="p">]</span>
+    <span class="n">arrays_description</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Window</span><span class="p">]</span>
     <span class="n">exception_handler</span><span class="p">:</span> <span class="n">Callable</span>
     <span class="n">when</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">]</span>
 
@@ -726,9 +823,8 @@
 <span class="sd">    chunks_size : list[list[int | None]] or None</span>
 <span class="sd">        For each dimension, the size of chunks in that dimension. None</span>
 <span class="sd">        values indicate unknown chunk sizes.</span>
-<span class="sd">    dtype : np.dtype or None</span>
-<span class="sd">        The numpy dtype of the array chunks. Set when first chunk owner</span>
-<span class="sd">        is registered.</span>
+<span class="sd">    dtype_by_timestep : dict[Timestep, np.dtype]</span>
+<span class="sd">        NumPy dtype for each timestep, set when chunk data arrives.</span>
 <span class="sd">    position_to_node_actorID : dict[tuple[int, ...], int]</span>
 <span class="sd">        Mapping from chunk position to the scheduling actor responsible</span>
 <span class="sd">        for that chunk.</span>
@@ -767,8 +863,8 @@
         <span class="c1"># For each dimension, the size of the chunks in this dimension</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Type of the numpy arrays</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Type of the numpy arrays, scoped to each timestep.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Timestep</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># ID of the scheduling actor in charge of the chunk at each position</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">position_to_node_actorID</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -792,7 +888,6 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">update_meta</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">nb_chunks_per_dim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
-        <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
         <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
         <span class="n">size</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
         <span class="n">node_actor_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -803,14 +898,12 @@
 
 <span class="sd">        This method records which scheduling actor is responsible for a chunk</span>
 <span class="sd">        and updates the array metadata. If this is the first chunk registered,</span>
-<span class="sd">        it initializes the array dimensions and dtype.</span>
+<span class="sd">        it initializes the array dimensions.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        nb_chunks_per_dim : tuple[int, ...]</span>
 <span class="sd">            Number of chunks per dimension in the array decomposition.</span>
-<span class="sd">        dtype : np.dtype</span>
-<span class="sd">            The numpy dtype of the chunk.</span>
 <span class="sd">        position : tuple[int, ...]</span>
 <span class="sd">            The position of the chunk in the array decomposition.</span>
 <span class="sd">        size : tuple[int, ...]</span>
@@ -824,19 +917,16 @@
 <span class="sd">        ------</span>
 <span class="sd">        AssertionError</span>
 <span class="sd">            If the chunk position is out of bounds, or if subsequent chunks</span>
-<span class="sd">            have inconsistent dimensions, dtype, or sizes compared to the</span>
-<span class="sd">            first chunk.</span>
+<span class="sd">            have inconsistent dimensions or sizes compared to the first chunk.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO should be done just once</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span> <span class="o">=</span> <span class="n">nb_chunks_per_dim</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">nb_chunks_per_dim</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nb_chunks_per_dim</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span> <span class="o">==</span> <span class="n">nb_chunks_per_dim</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">dtype</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="c1"># TODO this actually should be done each time</span>
@@ -848,6 +938,30 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">pos</span><span class="p">]</span> <span class="o">==</span> <span class="n">size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DaskArrayData.update_dtype">
+<a class="viewcode-back" href="../../../deisa.ray.types.html#deisa.ray.types.DaskArrayData.update_dtype">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestep</span><span class="p">:</span> <span class="n">Timestep</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Record or validate the dtype for an array timestep.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        timestep : Timestep</span>
+<span class="sd">            Timestep whose dtype is being recorded.</span>
+<span class="sd">        dtype : numpy.dtype</span>
+<span class="sd">            Dtype reported for chunks in this timestep.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If a different dtype was already registered for ``timestep``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">timestep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span> <span class="o">=</span> <span class="n">dtype</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span> <span class="o">==</span> <span class="n">dtype</span></div>
 
 
 <div class="viewcode-block" id="DaskArrayData.add_chunk_ref">
@@ -932,10 +1046,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position_to_node_actorID</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">timestep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span>
 
         <span class="c1"># We need to add the timestep since the same name can be used several times for different</span>
         <span class="c1"># timesteps</span>
         <span class="n">dask_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">timestep</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype_by_timestep</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">timestep</span><span class="p">)</span>
 
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_refs</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span>
 
@@ -961,11 +1077,12 @@
 
         <span class="n">dsk</span> <span class="o">=</span> <span class="n">HighLevelGraph</span><span class="o">.</span><span class="n">from_collections</span><span class="p">(</span><span class="n">dask_name</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">())</span>
 
-        <span class="n">full_array</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span>
+        <span class="n">full_array</span> <span class="o">=</span> <span class="n">DeisaArray</span><span class="p">(</span>
             <span class="n">dsk</span><span class="p">,</span>
             <span class="n">dask_name</span><span class="p">,</span>
             <span class="n">chunks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunks_size</span><span class="p">,</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">t</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">full_array</span></div>

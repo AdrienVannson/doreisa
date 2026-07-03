@@ -8,7 +8,6 @@ Submodules
    :maxdepth: 4
 
    deisa.ray.bridge
-   deisa.ray.comm
    deisa.ray.config
    deisa.ray.errors
    deisa.ray.head_node

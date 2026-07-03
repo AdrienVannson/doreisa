@@ -200,7 +200,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -247,25 +246,30 @@
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span><span class="p">,</span> <span class="n">defaultdict</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dask</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dask.array</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">da</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ray.util.dask</span><span class="w"> </span><span class="kn">import</span> <span class="n">ray_dask_get</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray._scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">deisa_ray_get</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">_default_exception_handler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">distributed_scheduling_enabled_from_env</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">IDeisa</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.head_node</span><span class="w"> </span><span class="kn">import</span> <span class="n">HeadNodeActor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.types</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ActorID</span><span class="p">,</span>
     <span class="n">DeisaArray</span><span class="p">,</span>
     <span class="n">RayActorHandle</span><span class="p">,</span>
-    <span class="n">Timestep</span><span class="p">,</span>
-    <span class="n">WindowSpec</span><span class="p">,</span>
+    <span class="n">Window</span><span class="p">,</span>
+    <span class="n">CallbackArgs</span><span class="p">,</span>
     <span class="n">_CallbackConfig</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_head_actor_options</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_head_actor_options</span><span class="p">,</span> <span class="n">get_ray_address</span>
+
+<span class="n">Callback</span> <span class="o">=</span> <span class="n">IDeisa</span><span class="o">.</span><span class="n">Callback</span>
+<span class="n">ExceptionHandler</span> <span class="o">=</span> <span class="n">IDeisa</span><span class="o">.</span><span class="n">ExceptionHandler</span>
+<span class="n">_default_exception_handler</span> <span class="o">=</span> <span class="n">IDeisa</span><span class="o">.</span><span class="n">_IDeisa__default_exception_handler</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ray_start_impl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -278,12 +282,44 @@
 <span class="sd">    does not provide a custom ``ray_start`` hook.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ray</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
-        <span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">log_to_driver</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logging_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+        <span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+            <span class="n">address</span><span class="o">=</span><span class="n">get_ray_address</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+            <span class="n">log_to_driver</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">logging_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_with_timestep</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">timestep</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeisaArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a Dask array as a :class:`DeisaArray` tagged with a timestep.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array : dask.array.Array</span>
+<span class="sd">        Array produced by the head actor.</span>
+<span class="sd">    timestep : int</span>
+<span class="sd">        Simulation timestep associated with ``array``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DeisaArray</span>
+<span class="sd">        Array view preserving the original graph metadata and exposing the</span>
+<span class="sd">        timestep through :attr:`DeisaArray.timestep`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">DeisaArray</span><span class="p">(</span>
+        <span class="n">array</span><span class="o">.</span><span class="n">dask</span><span class="p">,</span>
+        <span class="n">array</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">array</span><span class="o">.</span><span class="n">chunks</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">array</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="n">meta</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="s2">&quot;_meta&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">shape</span><span class="o">=</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <div class="viewcode-block" id="Deisa">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Deisa</span><span class="p">:</span>
+<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.Deisa">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Deisa</span><span class="p">(</span><span class="n">IDeisa</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Entry point that orchestrates analytics callbacks on Ray.</span>
 
@@ -293,10 +329,9 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
-        <span class="n">ray_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">max_simulation_ahead</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">feedback_queue_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize handler state without touching Ray.</span>
@@ -309,9 +344,14 @@
 <span class="sd">            Number of timesteps the analytics may lag behind the simulation.</span>
 <span class="sd">            Defaults to 1.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ray_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ray_start&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">max_simulation_ahead</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;max_simulation_ahead&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">unexpected</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deisa.__init__() got an unexpected keyword argument &#39;</span><span class="si">{</span><span class="n">unexpected</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
         <span class="c1"># cheap constructor: no Ray side effects</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_experimental_distributed_scheduling_enabled</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">experimental_distributed_scheduling_enabled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_experimental_distributed_scheduling_enabled</span> <span class="o">=</span> <span class="n">distributed_scheduling_enabled_from_env</span><span class="p">()</span>
 
         <span class="c1"># Do NOT mutate global config here if you want cheap unit tests;</span>
         <span class="c1"># do it when connecting, or inject it similarly.</span>
@@ -320,12 +360,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">node_actors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ActorID</span><span class="p">,</span> <span class="n">RayActorHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">registered_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_CallbackConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">deque</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_simulation_ahead</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">max_simulation_ahead</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">feedback_queue_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">feedback_queue_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">deque</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_connected</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -361,8 +400,8 @@
 <span class="sd">        into unrelated Dask computations in later tests or user code.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_experimental_distributed_scheduling_enabled</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">deisa_ray_get</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="s2">&quot;tasks&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">ray_dask_get</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="s2">&quot;tasks&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">deisa_ray_get</span><span class="p">,</span> <span class="n">dataframe__shuffle__method</span><span class="o">=</span><span class="s2">&quot;tasks&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">ray_dask_get</span><span class="p">,</span> <span class="n">dataframe__shuffle__method</span><span class="o">=</span><span class="s2">&quot;tasks&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_head_actor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -378,24 +417,24 @@
             <span class="n">feedback_queue_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feedback_queue_size</span><span class="p">,</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="Deisa.callback">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.callback">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">callback</span><span class="p">(</span>
+<div class="viewcode-block" id="Deisa.register">
+<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.Deisa.register">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">window_specs</span><span class="p">,</span>
-        <span class="n">exception_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">callback_args</span><span class="p">:</span> <span class="n">CallbackArgs</span><span class="p">,</span>
+        <span class="n">exception_handler</span><span class="p">:</span> <span class="n">ExceptionHandler</span> <span class="o">=</span> <span class="n">_default_exception_handler</span><span class="p">,</span>
         <span class="n">when</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;AND&quot;</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decorator that registers a sliding-window analytics callback.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        *window_specs : WindowSpec</span>
+<span class="sd">        *callback_args : CallbackArgs</span>
 <span class="sd">            Array descriptions the callback should receive.</span>
 <span class="sd">        exception_handler : Optional[Callable], optional</span>
 <span class="sd">            Handler invoked when the user callback raises. Defaults to</span>
-<span class="sd">            :func:`deisa.ray.errors._default_exception_handler`.</span>
+<span class="sd">            :func:`deisa.core.IDeisa.__default_exception_handler`.</span>
 <span class="sd">        when : Literal[&quot;AND&quot;, &quot;OR&quot;], optional</span>
 <span class="sd">            Governs whether all arrays (``&quot;AND&quot;``) or any array (``&quot;OR&quot;``)</span>
 <span class="sd">            must be available before the callback runs. Defaults to ``&quot;AND&quot;``.</span>
@@ -408,18 +447,36 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">deco</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">window_specs</span><span class="p">),</span> <span class="n">exception_handler</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Register ``fn`` as an analytics callback.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            fn : Callable</span>
+<span class="sd">                Callback function to register.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            Callable</span>
+<span class="sd">                The original callback function.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span>
+                <span class="n">fn</span><span class="p">,</span>
+                <span class="o">*</span><span class="n">callback_args</span><span class="p">,</span>
+                <span class="n">exception_handler</span><span class="o">=</span><span class="n">exception_handler</span><span class="p">,</span>
+                <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">deco</span></div>
 
 
 <div class="viewcode-block" id="Deisa.register_callback">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register_callback">[docs]</a>
+<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.Deisa.register_callback">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_callback</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">simulation_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-        <span class="n">arrays_spec</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">WindowSpec</span><span class="p">],</span>
-        <span class="n">exception_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">callback</span><span class="p">:</span> <span class="n">Callback</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">callback_args</span><span class="p">:</span> <span class="n">CallbackArgs</span><span class="p">,</span>
+        <span class="n">exception_handler</span><span class="p">:</span> <span class="n">ExceptionHandler</span> <span class="o">=</span> <span class="n">_default_exception_handler</span><span class="p">,</span>
         <span class="n">when</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;AND&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -427,10 +484,10 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        simulation_callback : Callable</span>
+<span class="sd">        callback : Callable</span>
 <span class="sd">            Function to run for each iteration; receives arrays as kwargs</span>
 <span class="sd">            and ``timestep``.</span>
-<span class="sd">        arrays_spec : list[WindowSpec]</span>
+<span class="sd">        *callback_args : CallbackArgs</span>
 <span class="sd">            Descriptions of arrays to stream to the callback (with optional</span>
 <span class="sd">            sliding windows).</span>
 <span class="sd">            Maximum iterations to execute. Default is a large sentinel.</span>
@@ -447,42 +504,25 @@
 <span class="sd">        Callable</span>
 <span class="sd">            The original callback, allowing decorator-style usage.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">arrays_spec</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">callback_arg</span> <span class="ow">in</span> <span class="n">callback_args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">callback_arg</span><span class="p">,</span> <span class="n">Window</span><span class="p">):</span>
+                <span class="n">arrays_spec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback_arg</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">callback_arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">arrays_spec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Window</span><span class="p">(</span><span class="n">callback_arg</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_connected</span><span class="p">()</span>  <span class="c1"># connect + handshake before accepting callbacks</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">_CallbackConfig</span><span class="p">(</span>
-            <span class="n">simulation_callback</span><span class="o">=</span><span class="n">simulation_callback</span><span class="p">,</span>
+            <span class="n">simulation_callback</span><span class="o">=</span><span class="n">callback</span><span class="p">,</span>
             <span class="n">arrays_description</span><span class="o">=</span><span class="n">arrays_spec</span><span class="p">,</span>
-            <span class="n">exception_handler</span><span class="o">=</span><span class="n">exception_handler</span> <span class="ow">or</span> <span class="n">_default_exception_handler</span><span class="p">,</span>
+            <span class="n">exception_handler</span><span class="o">=</span><span class="n">exception_handler</span><span class="p">,</span>
             <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">registered_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">simulation_callback</span></div>
+        <span class="k">return</span> <span class="n">callback</span></div>
 
 
-<div class="viewcode-block" id="Deisa.unregister_callback">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.unregister_callback">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_callback</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">simulation_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Unregister a previously registered simulation callback.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        simulation_callback : Callable</span>
-<span class="sd">            Callback to remove from the registry.</span>
-
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        NotImplementedError</span>
-<span class="sd">            Always, as the feature has not been implemented yet.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;method not yet implemented.&quot;</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Deisa.generate_queue_per_array">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.generate_queue_per_array">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate_queue_per_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_queue_per_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Prepare per-array queues that respect declared window sizes.</span>
 
@@ -493,9 +533,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">cb_cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">registered_callbacks</span><span class="p">:</span>
             <span class="n">description</span> <span class="o">=</span> <span class="n">cb_cfg</span><span class="o">.</span><span class="n">arrays_description</span>
-            <span class="k">for</span> <span class="n">array_def</span> <span class="ow">in</span> <span class="n">description</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="n">array_def</span><span class="o">.</span><span class="n">name</span>
-                <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">array_def</span><span class="o">.</span><span class="n">window_size</span> <span class="k">if</span> <span class="n">array_def</span><span class="o">.</span><span class="n">window_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">array_window</span> <span class="ow">in</span> <span class="n">description</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">array_window</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">array_window</span><span class="o">.</span><span class="n">size</span> <span class="k">if</span> <span class="n">array_window</span><span class="o">.</span><span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
 
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">maxlen</span> <span class="o">&lt;</span> <span class="n">window_size</span><span class="p">:</span>
@@ -503,11 +543,10 @@
                     <span class="k">else</span><span class="p">:</span>
                         <span class="k">pass</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">window_size</span><span class="p">)</span></div>
-
+                    <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">window_size</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Deisa.execute_callbacks">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.execute_callbacks">[docs]</a>
+<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.Deisa.execute_callbacks">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_callbacks</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -534,7 +573,7 @@
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Please register at least one callback before calling execute_callbacks()&quot;</span><span class="p">)</span>
 
             <span class="c1"># generate one queue per array which cleanly handles the window size</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generate_queue_per_array</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_generate_queue_per_array</span><span class="p">()</span>
 
             <span class="c1"># get first array to kickstart the process</span>
             <span class="c1"># - Add to queue, mark as new timestep arrived</span>
@@ -544,7 +583,7 @@
 
             <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DeisaArray</span><span class="p">(</span><span class="n">dask</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">arr_timestep</span><span class="p">))</span>
+                <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_with_timestep</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">arr_timestep</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -567,6 +606,8 @@
                         <span class="p">)</span>
                     <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;__deisa_last_iteration_array&quot;</span><span class="p">:</span>
                         <span class="n">end_reached</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="c1"># TODO should it print or return?</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulation closed at timestep: </span><span class="si">{</span><span class="n">arr_timestep</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                         <span class="k">break</span>
                     <span class="c1"># simulation has produced a higher timestep -&gt; process all arrays for current_timestep</span>
                     <span class="k">if</span> <span class="n">arr_timestep</span> <span class="o">&gt;</span> <span class="n">current_timestep</span><span class="p">:</span>
@@ -574,7 +615,7 @@
 
                     <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DeisaArray</span><span class="p">(</span><span class="n">dask</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">arr_timestep</span><span class="p">))</span>
+                        <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_with_timestep</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">arr_timestep</span><span class="p">))</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -585,23 +626,23 @@
                     <span class="n">exception_handler</span> <span class="o">=</span> <span class="n">cb_cfg</span><span class="o">.</span><span class="n">exception_handler</span>
                     <span class="n">when</span> <span class="o">=</span> <span class="n">cb_cfg</span><span class="o">.</span><span class="n">when</span>
 
-                    <span class="n">should_call</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_call</span><span class="p">(</span><span class="n">description_arrays_needed</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
+                    <span class="n">should_call</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_call</span><span class="p">(</span><span class="n">description_arrays_needed</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">should_call</span><span class="p">:</span>
                         <span class="c1"># Compute the arrays to pass to the callback</span>
-                        <span class="n">callback_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">DeisaArray</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_callback_args</span><span class="p">(</span>
+                        <span class="n">callback_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">DeisaArray</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_callback_args</span><span class="p">(</span>
                             <span class="n">description_arrays_needed</span>
                         <span class="p">)</span>
                         <span class="k">try</span><span class="p">:</span>
                             <span class="n">simulation_callback</span><span class="p">(</span><span class="o">**</span><span class="n">callback_args</span><span class="p">)</span>
+                        <span class="c1"># TODO need to discuss whats the best way to handle this.</span>
+                        <span class="c1"># this is simulation_callback strictly, so maybe ALL errors</span>
+                        <span class="c1"># should be caught.</span>
                         <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="n">e</span>
                         <span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="n">e</span>
                         <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="n">exception_handler</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-                            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                                <span class="n">_default_exception_handler</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                            <span class="n">exception_handler</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 
                         <span class="k">del</span> <span class="n">callback_args</span>
                         <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
@@ -614,20 +655,18 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">end_reached</span><span class="p">:</span>
                     <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DeisaArray</span><span class="p">(</span><span class="n">dask</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">arr_timestep</span><span class="p">))</span>
+                        <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_with_timestep</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">arr_timestep</span><span class="p">))</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="Deisa.determine_callback_args">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.determine_callback_args">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">determine_callback_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description_of_arrays_needed</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">DeisaArray</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_determine_callback_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description_of_arrays_needed</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">DeisaArray</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build the kwargs passed to a simulation callback.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        description_of_arrays_needed : Sequence[WindowSpec]</span>
+<span class="sd">        description_of_arrays_needed : Sequence[Window]</span>
 <span class="sd">            Array descriptions requested by the callback.</span>
 
 <span class="sd">        Returns</span>
@@ -636,26 +675,23 @@
 <span class="sd">            Mapping from array name to the latest (windowed) list of ``DeisaArray`` instances.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">callback_args</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">description</span> <span class="ow">in</span> <span class="n">description_of_arrays_needed</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">name</span>
-            <span class="n">window_size</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">window_size</span>
+        <span class="k">for</span> <span class="n">window</span> <span class="ow">in</span> <span class="n">description_of_arrays_needed</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">window_size</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">size</span>
             <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_per_array</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">window_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">callback_args</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">queue</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">callback_args</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">queue</span><span class="p">)[</span><span class="o">-</span><span class="n">window_size</span><span class="p">:]</span>
-        <span class="k">return</span> <span class="n">callback_args</span></div>
+        <span class="k">return</span> <span class="n">callback_args</span>
 
-
-<div class="viewcode-block" id="Deisa.should_call">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.should_call">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">should_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description_of_arrays_needed</span><span class="p">,</span> <span class="n">when</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_should_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description_of_arrays_needed</span><span class="p">,</span> <span class="n">when</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Determine whether a callback should execute for the current state.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        description_of_arrays_needed : Sequence[WindowSpec]</span>
+<span class="sd">        description_of_arrays_needed : Sequence[Window]</span>
 <span class="sd">            Array descriptions governing the callback.</span>
 <span class="sd">        when : Literal[&quot;AND&quot;, &quot;OR&quot;]</span>
 <span class="sd">            Execution mode specifying whether all arrays or any array must have</span>
@@ -670,17 +706,15 @@
         <span class="k">if</span> <span class="n">when</span> <span class="o">==</span> <span class="s2">&quot;AND&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># when == &#39;OR&#39;</span>
-            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span></div>
-
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_seen_array</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_new_timestep</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Deisa.set">
-<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.set">[docs]</a>
+<a class="viewcode-back" href="../../../deisa.ray.window_handler.html#deisa.ray.Deisa.set">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-        <span class="n">timestep</span><span class="p">:</span> <span class="n">Timestep</span><span class="p">,</span>
+        <span class="n">timestep</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Publish a feedback value for bridges.</span>

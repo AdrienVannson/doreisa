@@ -200,7 +200,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -244,112 +243,49 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for deisa.ray.config</h1><div class="highlight"><pre>
-<span></span><span class="c1"># deisa/config.py</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">deisa.ray.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigError</span>
 
+<span class="n">DEISA_DISTRIBUTED_SCHEDULING_ENV</span> <span class="o">=</span> <span class="s2">&quot;DEISA_DISTRIBUTED_SCHEDULING&quot;</span>
 
-<div class="viewcode-block" id="Config">
-<a class="viewcode-back" href="../../../deisa.ray.config.html#deisa.ray.config.Config">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
+
+<div class="viewcode-block" id="distributed_scheduling_enabled_from_env">
+<a class="viewcode-back" href="../../../deisa.ray.config.html#deisa.ray.config.distributed_scheduling_enabled_from_env">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">distributed_scheduling_enabled_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Process-wide configuration for the deisa library.</span>
+<span class="sd">    Read distributed scheduling from the process environment.</span>
 
-<span class="sd">    Mutable until locked. Instantiating Deisa() locks configuration to prevent</span>
-<span class="sd">    mid-run behavior changes.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        ``True`` when ``DEISA_DISTRIBUTED_SCHEDULING`` contains an enabled</span>
+<span class="sd">        value, otherwise ``False``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ConfigError</span>
+<span class="sd">        If ``DEISA_DISTRIBUTED_SCHEDULING`` is set to an unsupported value.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    ``DEISA_DISTRIBUTED_SCHEDULING`` accepts common boolean shell values:</span>
+<span class="sd">    ``1``, ``true``, ``yes``, and ``on`` enable the feature, while unset,</span>
+<span class="sd">    empty, ``0``, ``false``, ``no``, and ``off`` disable it.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw_value</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">DEISA_DISTRIBUTED_SCHEDULING_ENV</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raw_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise configuration defaults (all features disabled and unlocked).&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_locked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_enable_experimental_distributed_scheduling</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">raw_value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">,</span> <span class="s2">&quot;off&quot;</span><span class="p">}:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;on&quot;</span><span class="p">}:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">raise</span> <span class="n">ConfigError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DEISA_DISTRIBUTED_SCHEDULING_ENV</span><span class="si">}</span><span class="s2"> must be one of 1/0, true/false, yes/no, or on/off&quot;</span><span class="p">)</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">experimental_distributed_scheduling_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Read-only accessor for the experimental distributed scheduling flag.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        bool</span>
-<span class="sd">            ``True`` when distributed scheduling is enabled, ``False`` otherwise.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enable_experimental_distributed_scheduling</span>
-
-<div class="viewcode-block" id="Config.enable_experimental_distributed_scheduling">
-<a class="viewcode-back" href="../../../deisa.ray.config.html#deisa.ray.config.Config.enable_experimental_distributed_scheduling">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">enable_experimental_distributed_scheduling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Enable/disable experimental distributed scheduling.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        enabled : bool, optional</span>
-<span class="sd">            Desired state of the flag. Defaults to ``True``.</span>
-
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        ConfigError</span>
-<span class="sd">            If configuration has already been locked by instantiating ``Deisa``.</span>
-<span class="sd">        TypeError</span>
-<span class="sd">            If ``enabled`` is not a boolean.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        &gt;&gt;&gt; deisa.config.enable_experimental_distributed_scheduling()      # enable</span>
-<span class="sd">        &gt;&gt;&gt; deisa.config.enable_experimental_distributed_scheduling(False) # disable</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_locked</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ConfigError</span><span class="p">(</span>
-                <span class="s2">&quot;deisa.config is locked because Deisa() has already been instantiated. &quot;</span>
-                <span class="s2">&quot;Set configuration before creating a Deisa instance.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">enabled</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;enabled must be a bool&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_enable_experimental_distributed_scheduling</span> <span class="o">=</span> <span class="n">enabled</span></div>
-
-
-<div class="viewcode-block" id="Config.lock">
-<a class="viewcode-back" href="../../../deisa.ray.config.html#deisa.ray.config.Config.lock">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">lock</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Make configuration immutable for the remainder of the process.</span>
-
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        Called automatically when ``Deisa()`` is instantiated. Further</span>
-<span class="sd">        mutation attempts will raise :class:`ConfigError`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_locked</span> <span class="o">=</span> <span class="kc">True</span></div>
-
-
-<div class="viewcode-block" id="Config.is_locked">
-<a class="viewcode-back" href="../../../deisa.ray.config.html#deisa.ray.config.Config.is_locked">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">is_locked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Report whether the configuration has been locked.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        bool</span>
-<span class="sd">            ``True`` if :meth:`lock` has been called, otherwise ``False``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_locked</span></div>
-
-
-    <span class="c1"># ---- Test support (explicitly non-public) ----</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_for_tests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Reset config to defaults and unlock it.</span>
-
-<span class="sd">        Intended for unit tests only. Do not rely on this in production.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_locked</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_enable_experimental_distributed_scheduling</span> <span class="o">=</span> <span class="kc">False</span></div>
-
-
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
 </pre></div>
         </article>
       </div>

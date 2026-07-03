@@ -201,7 +201,6 @@
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -280,6 +279,17 @@ to free memory.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>AsyncDict[int, ray.ObjectRef | bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="deisa.ray.types.ArrayPerTimestep.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#deisa.ray.types.ArrayPerTimestep.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Dtype shared by all chunks received for this array timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.dtype or None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -384,13 +394,12 @@ values indicate unknown chunk sizes.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="deisa.ray.types.DaskArrayData.dtype">
-<span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#deisa.ray.types.DaskArrayData.dtype" title="Link to this definition">¶</a></dt>
-<dd><p>The numpy dtype of the array chunks. Set when first chunk owner
-is registered.</p>
+<dt class="sig sig-object py" id="deisa.ray.types.DaskArrayData.dtype_by_timestep">
+<span class="sig-name descname"><span class="pre">dtype_by_timestep</span></span><a class="headerlink" href="#deisa.ray.types.DaskArrayData.dtype_by_timestep" title="Link to this definition">¶</a></dt>
+<dd><p>NumPy dtype for each timestep, set when chunk data arrives.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.dtype or None</p>
+<dd class="field-odd"><p>dict[Timestep, np.dtype]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -510,17 +519,33 @@ embedding in the graph to avoid leaking memory.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.types.DaskArrayData.update_dtype">
+<span class="sig-name descname"><span class="pre">update_dtype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#DaskArrayData.update_dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DaskArrayData.update_dtype" title="Link to this definition">¶</a></dt>
+<dd><p>Record or validate the dtype for an array timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timestep</strong> (<em>Timestep</em>) – Timestep whose dtype is being recorded.</p></li>
+<li><p><strong>dtype</strong> (<em>numpy.dtype</em>) – Dtype reported for chunks in this timestep.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If a different dtype was already registered for <code class="docutils literal notranslate"><span class="pre">timestep</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="deisa.ray.types.DaskArrayData.update_meta">
-<span class="sig-name descname"><span class="pre">update_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nb_chunks_per_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_actor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#DaskArrayData.update_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DaskArrayData.update_meta" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">update_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nb_chunks_per_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_actor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bridge_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#DaskArrayData.update_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DaskArrayData.update_meta" title="Link to this definition">¶</a></dt>
 <dd><p>Register a scheduling actor as the owner of a chunk at a specific position.</p>
 <p>This method records which scheduling actor is responsible for a chunk
 and updates the array metadata. If this is the first chunk registered,
-it initializes the array dimensions and dtype.</p>
+it initializes the array dimensions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>nb_chunks_per_dim</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Number of chunks per dimension in the array decomposition.</p></li>
-<li><p><strong>dtype</strong> (<em>np.dtype</em>) – The numpy dtype of the chunk.</p></li>
 <li><p><strong>position</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – The position of the chunk in the array decomposition.</p></li>
 <li><p><strong>size</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – The size of the chunk along each dimension.</p></li>
 <li><p><strong>node_actor_id</strong> (<em>int</em>) – Scheduling actor that owns this chunk.</p></li>
@@ -529,8 +554,7 @@ it initializes the array dimensions and dtype.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>AssertionError</strong> – If the chunk position is out of bounds, or if subsequent chunks
-    have inconsistent dimensions, dtype, or sizes compared to the
-    first chunk.</p>
+    have inconsistent dimensions or sizes compared to the first chunk.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -539,8 +563,22 @@ it initializes the array dimensions and dtype.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="deisa.ray.types.DeisaArray">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">DeisaArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dask.array.core.Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/types.html#DeisaArray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DeisaArray" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">DeisaArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/types.html#DeisaArray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DeisaArray" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="deisa.ray.types.DeisaArray.timestep">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">timestep</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#deisa.ray.types.DeisaArray.timestep" title="Link to this definition">¶</a></dt>
+<dd><p>Return the simulation timestep associated with this array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Timestep provided when the array was created.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="deisa.ray.types.DeisaArray.to_hdf5">
 <span class="sig-name descname"><span class="pre">to_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#DeisaArray.to_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DeisaArray.to_hdf5" title="Link to this definition">¶</a></dt>
@@ -562,10 +600,30 @@ files using HDF5 VDS. The chunk file is named as
 <dl class="py method">
 <dt class="sig sig-object py" id="deisa.ray.types.DeisaArray.to_zarr">
 <span class="sig-name descname"><span class="pre">to_zarr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'a'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#DeisaArray.to_zarr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.DeisaArray.to_zarr" title="Link to this definition">¶</a></dt>
-<dd><p>Save data using the zarr storage format</p>
+<dd><p>Save this array using the Zarr storage format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – Directory, store, or path-like target passed to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">dask.array.to_zarr()</span></code>.</p></li>
+<li><p><strong>component</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Component path inside the Zarr store.</p></li>
+<li><p><strong>storage_options</strong> (<em>dict</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Storage options forwarded to Dask for fsspec-backed targets.</p></li>
+<li><p><strong>region</strong> (<em>tuple</em><em>[</em><em>slice</em><em>, </em><em>...</em><em>] or </em><em>None</em><em>, </em><em>optional</em>) – Region to write within an existing array.</p></li>
+<li><p><strong>compute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to compute immediately. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>return_stored</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether Dask should return stored chunks. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Zarr write mode. Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return value from <code class="xref py py-func docutils literal notranslate"><span class="pre">dask.array.to_zarr()</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
 <p class="rubric">Notes</p>
-<p>This method is a simple wrapper to <cite>dask.to_zarr</cite>. To more details about parameters see:</p>
-<p><a class="reference external" href="https://docs.dask.org/en/latest/generated/dask.array.to_zarr.html#dask.array.to_zarr">https://docs.dask.org/en/latest/generated/dask.array.to_zarr.html#dask.array.to_zarr</a></p>
+<p>This method persists the array first, resolves local path-like targets
+to absolute paths, and then delegates to <code class="xref py py-func docutils literal notranslate"><span class="pre">dask.array.to_zarr()</span></code>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -679,27 +737,21 @@ by different scheduling actors.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="deisa.ray.types.WindowSpec">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">WindowSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/types.html#WindowSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.WindowSpec" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="deisa.ray.types.Window">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">Window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/types.html#Window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.Window" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Description of an array with optional windowing support.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>str</em>) – The name of the array.</p></li>
-<li><p><strong>window_size</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If specified, creates a sliding window of arrays for this array name.
-The window will contain the last <cite>window_size</cite> timesteps. If None,
-only the current timestep array is provided. Default is None.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of the array passed to a registered analytics callback.</p></li>
+<li><p><strong>size</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of latest timesteps to pass for this array. Defaults to 1.</p></li>
 </ul>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="k">return</span> <span class="n">arr</span> <span class="o">/</span> <span class="n">arr</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Array with windowing: last 5 timesteps</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">array_def</span> <span class="o">=</span> <span class="n">ArrayDefinition</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Array without windowing: current timestep only</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">array_def</span> <span class="o">=</span> <span class="n">ArrayDefinition</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;pressure&quot;</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<p>Request the latest five <code class="docutils literal notranslate"><span class="pre">temperature</span></code> arrays in a callback:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deisa</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">Window</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -707,20 +759,20 @@ only the current timestep array is provided. Default is None.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="deisa.ray.types.chunk_fname">
 <span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">chunk_fname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/types.html#chunk_fname"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.chunk_fname" title="Link to this definition">¶</a></dt>
-<dd><p>Create the filename for a chunk.</p>
+<dd><p>Create the hidden HDF5 filename for one stored chunk.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<em>str</em>) – The name of the final file where the data will be stored.</p></li>
-<li><p><strong>dataset</strong> (<em>str</em>) – The name of the dataset in the hdf5 where the data will be stored.</p></li>
-<li><p><strong>block_id</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Chunk position to create the file.</p></li>
+<li><p><strong>fname</strong> (<em>str</em>) – Final HDF5 VDS file path.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name inside the final HDF5 file.</p></li>
+<li><p><strong>block_id</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em><em>, </em><em>optional</em>) – Chunk grid position. Defaults to <code class="docutils literal notranslate"><span class="pre">()</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Filename for the chunk of position block_id.</p>
+<dd class="field-even"><p>Hidden chunk file path next to <code class="docutils literal notranslate"><span class="pre">fname</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
+<dd class="field-odd"><p>pathlib.Path</p>
 </dd>
 </dl>
 </dd></dl>
@@ -728,17 +780,23 @@ only the current timestep array is provided. Default is None.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="deisa.ray.types.create_vds">
 <span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">create_vds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_chunks_per_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#create_vds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.create_vds" title="Link to this definition">¶</a></dt>
-<dd><p>Creates a VDS aggregating all chunk files.</p>
+<dd><p>Create an HDF5 virtual dataset aggregating all chunk files.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<em>str</em>) – The name of the final file where the data will be stored.</p></li>
-<li><p><strong>dataset</strong> (<em>str</em>) – The name of the dataset in the hdf5 where the data will be stored.</p></li>
-<li><p><strong>chunk_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>,</em><em>...</em><em>]</em>) – Shape of the chunks, used to map the chunks into the VDS.4</p></li>
-<li><p><strong>data_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>,</em><em>...</em><em>]</em>) – Shape of the data.</p></li>
-<li><p><strong>nb_chunks_per_dim</strong> (<em>tuple</em><em>[</em><em>int</em><em>,</em><em>...</em><em>]</em>) – Number of chunks for each dimension</p></li>
-<li><p><strong>data_dtype</strong> (<em>np.dtype</em>) – The numpy dtype of the data.</p></li>
+<li><p><strong>fname</strong> (<em>str</em>) – Final HDF5 VDS file path.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name to create in <code class="docutils literal notranslate"><span class="pre">fname</span></code>.</p></li>
+<li><p><strong>chunk_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Shape of each chunk.</p></li>
+<li><p><strong>data_shape</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Shape of the full logical dataset.</p></li>
+<li><p><strong>nb_chunks_per_dim</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Number of chunks along each dimension.</p></li>
+<li><p><strong>data_dtype</strong> (<em>numpy.dtype</em>) – NumPy dtype of the dataset.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Creates or updates <code class="docutils literal notranslate"><span class="pre">fname</span></code> with the virtual dataset.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -746,15 +804,21 @@ only the current timestep array is provided. Default is None.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="deisa.ray.types.save_chunk">
 <span class="sig-prename descclassname"><span class="pre">deisa.ray.types.</span></span><span class="sig-name descname"><span class="pre">save_chunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/types.html#save_chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.types.save_chunk" title="Link to this definition">¶</a></dt>
-<dd><p>Save one chunk to a individual hdf5 file.</p>
+<dd><p>Save one chunk to an individual HDF5 file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>chunk</strong> (<em>np.ndarray</em>) – Chunk to be stored.</p></li>
-<li><p><strong>fname</strong> (<em>str</em>) – The name of the final file where the data will be stored.</p></li>
-<li><p><strong>dataset</strong> (<em>str</em>) – The name of the dataset in the hdf5 where the data will be stored.</p></li>
-<li><p><strong>block_id</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em>) – Chunk position, used to merge into a VDS.</p></li>
+<li><p><strong>chunk</strong> (<em>numpy.ndarray</em>) – Chunk payload to write.</p></li>
+<li><p><strong>fname</strong> (<em>str</em>) – Final HDF5 VDS file path used to derive the chunk filename.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name to create in the chunk file.</p></li>
+<li><p><strong>block_id</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>] or </em><em>None</em><em>, </em><em>optional</em>) – Chunk grid position used in the chunk filename.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Writes the chunk file for later VDS assembly.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -766,9 +830,15 @@ only the current timestep array is provided. Default is None.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<em>str</em>) – The name of the final file where the data will be stored.</p></li>
-<li><p><strong>sources</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#deisa.ray.types.DeisaArray" title="deisa.ray.types.DeisaArray"><em>DeisaArray</em></a><em>]</em>) – Dict mapping the datasets in final file to final files</p></li>
+<li><p><strong>fname</strong> (<em>str</em>) – Final HDF5 file path.</p></li>
+<li><p><strong>sources</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#deisa.ray.types.DeisaArray" title="deisa.ray.types.DeisaArray"><em>DeisaArray</em></a><em>]</em>) – Mapping from dataset names in <code class="docutils literal notranslate"><span class="pre">fname</span></code> to arrays to persist.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Creates chunk files and the virtual datasets in <code class="docutils literal notranslate"><span class="pre">fname</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -839,6 +909,7 @@ errors with datasets with special characters in the name.</p>
 <li><a class="reference internal" href="#deisa.ray.types.ArrayPerTimestep"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep</span></code></a><ul>
 <li><a class="reference internal" href="#deisa.ray.types.ArrayPerTimestep.chunks_ready_event"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.chunks_ready_event</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.ArrayPerTimestep.local_chunks"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.local_chunks</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.types.ArrayPerTimestep.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.dtype</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#deisa.ray.types.ChunkRef"><code class="docutils literal notranslate"><span class="pre">ChunkRef</span></code></a></li>
@@ -848,7 +919,7 @@ errors with datasets with special characters in the name.</p>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.nb_chunks_per_dim"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_chunks_per_dim</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.nb_chunks"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_chunks</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.chunks_size"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.chunks_size</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.dtype"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.dtype</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.dtype_by_timestep"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.dtype_by_timestep</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.position_to_node_actorID"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.position_to_node_actorID</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.position_to_bridgeID"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.position_to_bridgeID</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.nb_scheduling_actors"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_scheduling_actors</span></code></a></li>
@@ -856,10 +927,12 @@ errors with datasets with special characters in the name.</p>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.pos_to_ref_by_timestep"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.pos_to_ref_by_timestep</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.add_chunk_ref"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.add_chunk_ref()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.get_full_array"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.get_full_array()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.update_dtype"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.update_dtype()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DaskArrayData.update_meta"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.update_meta()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#deisa.ray.types.DeisaArray"><code class="docutils literal notranslate"><span class="pre">DeisaArray</span></code></a><ul>
+<li><a class="reference internal" href="#deisa.ray.types.DeisaArray.timestep"><code class="docutils literal notranslate"><span class="pre">DeisaArray.timestep</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DeisaArray.to_hdf5"><code class="docutils literal notranslate"><span class="pre">DeisaArray.to_hdf5()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.DeisaArray.to_zarr"><code class="docutils literal notranslate"><span class="pre">DeisaArray.to_zarr()</span></code></a></li>
 </ul>
@@ -877,7 +950,7 @@ errors with datasets with special characters in the name.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#deisa.ray.types.ScheduledByOtherActor"><code class="docutils literal notranslate"><span class="pre">ScheduledByOtherActor</span></code></a></li>
-<li><a class="reference internal" href="#deisa.ray.types.WindowSpec"><code class="docutils literal notranslate"><span class="pre">WindowSpec</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.types.Window"><code class="docutils literal notranslate"><span class="pre">Window</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.chunk_fname"><code class="docutils literal notranslate"><span class="pre">chunk_fname()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.create_vds"><code class="docutils literal notranslate"><span class="pre">create_vds()</span></code></a></li>
 <li><a class="reference internal" href="#deisa.ray.types.save_chunk"><code class="docutils literal notranslate"><span class="pre">save_chunk()</span></code></a></li>

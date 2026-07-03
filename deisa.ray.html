@@ -201,7 +201,6 @@
 <ul class="current">
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -256,16 +255,18 @@
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deisa.ray.comm.html">deisa.ray.comm module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.Config.enable_experimental_distributed_scheduling"><code class="docutils literal notranslate"><span class="pre">Config.enable_experimental_distributed_scheduling()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.Config.experimental_distributed_scheduling_enabled"><code class="docutils literal notranslate"><span class="pre">Config.experimental_distributed_scheduling_enabled</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.Config.is_locked"><code class="docutils literal notranslate"><span class="pre">Config.is_locked()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.Config.lock"><code class="docutils literal notranslate"><span class="pre">Config.lock()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="deisa.ray.bridge.html">deisa.ray.bridge module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge"><code class="docutils literal notranslate"><span class="pre">Bridge</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.node_id"><code class="docutils literal notranslate"><span class="pre">Bridge.node_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.close"><code class="docutils literal notranslate"><span class="pre">Bridge.close()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.get"><code class="docutils literal notranslate"><span class="pre">Bridge.get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.bridge.html#deisa.ray.bridge.Bridge.send"><code class="docutils literal notranslate"><span class="pre">Bridge.send()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deisa.ray.config.html">deisa.ray.config module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deisa.ray.config.html#deisa.ray.config.distributed_scheduling_enabled_from_env"><code class="docutils literal notranslate"><span class="pre">distributed_scheduling_enabled_from_env()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="deisa.ray.errors.html">deisa.ray.errors module</a><ul>
@@ -280,13 +281,11 @@
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.actor_handle"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.actor_handle</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.head"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.head</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.partial_arrays"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.partial_arrays</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.feedback_non_chunked"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.feedback_non_chunked</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.feedback"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.feedback</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.add_chunk"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.add_chunk()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.delete"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.delete()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.get"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.finalize_registration"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.finalize_registration()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.ready"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.ready()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.register_chunk_meta()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.set"><code class="docutils literal notranslate"><span class="pre">NodeActorBase.set()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -295,6 +294,7 @@
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep.chunks_ready_event"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.chunks_ready_event</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep.local_chunks"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.local_chunks</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ArrayPerTimestep.dtype"><code class="docutils literal notranslate"><span class="pre">ArrayPerTimestep.dtype</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ChunkRef"><code class="docutils literal notranslate"><span class="pre">ChunkRef</span></code></a></li>
@@ -304,7 +304,7 @@
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_chunks_per_dim"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_chunks_per_dim</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_chunks"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_chunks</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.chunks_size"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.chunks_size</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.dtype"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.dtype_by_timestep"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.dtype_by_timestep</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.position_to_node_actorID"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.position_to_node_actorID</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.position_to_bridgeID"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.position_to_bridgeID</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.nb_scheduling_actors"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.nb_scheduling_actors</span></code></a></li>
@@ -312,10 +312,12 @@
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.pos_to_ref_by_timestep"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.pos_to_ref_by_timestep</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.add_chunk_ref"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.add_chunk_ref()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.get_full_array"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.get_full_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.update_dtype"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.update_dtype()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DaskArrayData.update_meta"><code class="docutils literal notranslate"><span class="pre">DaskArrayData.update_meta()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DeisaArray"><code class="docutils literal notranslate"><span class="pre">DeisaArray</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DeisaArray.timestep"><code class="docutils literal notranslate"><span class="pre">DeisaArray.timestep</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DeisaArray.to_hdf5"><code class="docutils literal notranslate"><span class="pre">DeisaArray.to_hdf5()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.DeisaArray.to_zarr"><code class="docutils literal notranslate"><span class="pre">DeisaArray.to_zarr()</span></code></a></li>
 </ul>
@@ -333,7 +335,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.ScheduledByOtherActor"><code class="docutils literal notranslate"><span class="pre">ScheduledByOtherActor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.WindowSpec"><code class="docutils literal notranslate"><span class="pre">WindowSpec</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.Window"><code class="docutils literal notranslate"><span class="pre">Window</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.chunk_fname"><code class="docutils literal notranslate"><span class="pre">chunk_fname()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.create_vds"><code class="docutils literal notranslate"><span class="pre">create_vds()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.types.html#deisa.ray.types.save_chunk"><code class="docutils literal notranslate"><span class="pre">save_chunk()</span></code></a></li>
@@ -344,22 +346,18 @@
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_head_actor_options"><code class="docutils literal notranslate"><span class="pre">get_head_actor_options()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_head_node_id"><code class="docutils literal notranslate"><span class="pre">get_head_node_id()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_node_actor_options"><code class="docutils literal notranslate"><span class="pre">get_node_actor_options()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_ray_address"><code class="docutils literal notranslate"><span class="pre">get_ray_address()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_ready_actor_with_retry"><code class="docutils literal notranslate"><span class="pre">get_ready_actor_with_retry()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.get_system_metadata"><code class="docutils literal notranslate"><span class="pre">get_system_metadata()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.utils.html#deisa.ray.utils.log"><code class="docutils literal notranslate"><span class="pre">log()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="deisa.ray.validate.html">deisa.ray.validate module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deisa.ray.window_handler.html">deisa.ray.window_handler module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa"><code class="docutils literal notranslate"><span class="pre">Deisa</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.callback"><code class="docutils literal notranslate"><span class="pre">Deisa.callback()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.determine_callback_args"><code class="docutils literal notranslate"><span class="pre">Deisa.determine_callback_args()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.execute_callbacks"><code class="docutils literal notranslate"><span class="pre">Deisa.execute_callbacks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.generate_queue_per_array"><code class="docutils literal notranslate"><span class="pre">Deisa.generate_queue_per_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register"><code class="docutils literal notranslate"><span class="pre">Deisa.register()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.register_callback"><code class="docutils literal notranslate"><span class="pre">Deisa.register_callback()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.set"><code class="docutils literal notranslate"><span class="pre">Deisa.set()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.should_call"><code class="docutils literal notranslate"><span class="pre">Deisa.should_call()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="deisa.ray.window_handler.html#deisa.ray.window_handler.Deisa.unregister_callback"><code class="docutils literal notranslate"><span class="pre">Deisa.unregister_callback()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -369,6 +367,253 @@
 </section>
 <section id="module-deisa.ray">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-deisa.ray" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deisa.ray.Bridge">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.</span></span><span class="sig-name descname"><span class="pre">Bridge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ICommunicator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays_metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Bridge" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IBridge</span></code></p>
+<p>Bridge between MPI ranks and Ray cluster for distributed array processing.</p>
+<p>Each Bridge instance is created by an MPI rank to connect to the Ray cluster
+and send data chunks. Each Bridge is responsible for managing a chunk of data
+from the decomposed distributed array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comm</strong> (<em>deisa.core.ICommunicator</em>) – Communication backend for the simulation ranks. The bridge ID is
+derived from <code class="docutils literal notranslate"><span class="pre">comm.Get_rank()</span></code>.</p></li>
+<li><p><strong>arrays_metadata</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Mapping</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Metadata describing the array layout managed by this bridge.</p></li>
+<li><p><strong>_node_id</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Node identifier used for testing or custom scheduling. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>scheduling_actor_cls</strong> (<em>Type</em><em>, </em><em>optional</em>) – Class used to materialize the scheduling actor. Defaults to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">deisa.ray.scheduling_actor.SchedulingActor</span></code>.</p></li>
+<li><p><strong>_init_retries</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of attempts to create and ready the node actor. Defaults to 3.</p></li>
+<li><p><strong>object_store_memory_timeout_s</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Maximum time to wait for Ray object store memory before raising
+<code class="docutils literal notranslate"><span class="pre">MemoryError</span></code>. Defaults to 100 seconds. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to wait forever.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="deisa.ray.Bridge.node_id">
+<span class="sig-name descname"><span class="pre">node_id</span></span><a class="headerlink" href="#deisa.ray.Bridge.node_id" title="Link to this definition">¶</a></dt>
+<dd><p>The ID of the node this Bridge is associated with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>The Bridge automatically initializes Ray if it hasn’t been initialized yet.
+The scheduling actor is created with a detached lifetime to persist beyond
+the Bridge initialization. The actor uses node affinity scheduling to ensure
+it runs on the specified node.</p>
+<p class="rubric">Examples</p>
+<p>Create a bridge for a simulation rank that owns one array <code class="docutils literal notranslate"><span class="pre">temperature</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arrays_metadata</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;global_shape&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+        <span class="s2">&quot;chunk_shape&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+        <span class="s2">&quot;chunk_position&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">bridge</span> <span class="o">=</span> <span class="n">Bridge</span><span class="p">(</span>
+    <span class="n">arrays_metadata</span><span class="o">=</span><span class="n">arrays_metadata</span><span class="p">,</span>
+    <span class="n">comm</span><span class="o">=</span><span class="n">comm</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">bridge</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+    <span class="n">array_name</span><span class="o">=</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span>
+    <span class="n">chunk</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+    <span class="n">timestep</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Bridge.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Bridge.close" title="Link to this definition">¶</a></dt>
+<dd><p>Close the bridge by signaling analytics that the simulation finished.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timestep</strong> (<em>int</em>) – The timestep index corresponding to the sentinel chunk.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Bridge.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Bridge.get" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve feedback from analytics to influence the simulation.</p>
+<p>Bridge <code class="docutils literal notranslate"><span class="pre">0</span></code> queries the global head actor directly, then broadcasts
+the lookup result to every bridge in the communicator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – The key that is being retrieved from the Analytics.</p></li>
+<li><p><strong>timestep</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Timestep associated with the requested feedback value. When
+omitted, returns the entire retained queue for <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+<li><p><strong>default</strong> (<em>Any</em><em>, </em><em>optional</em>) – Value returned when no feedback exists for <code class="docutils literal notranslate"><span class="pre">key</span></code> and
+<code class="docutils literal notranslate"><span class="pre">timestep</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This remains a collective operation when a communicator is used: all
+bridges must call <code class="docutils literal notranslate"><span class="pre">get</span></code> in the same order so the broadcast completes.
+The retained feedback queue is fixed-size, so old entries may be
+dropped if analytics publishes more values than the queue can hold.
+Callback execution is intentionally one timestep behind: analytics
+processes a timestep only after a later timestep or the close sentinel
+arrives. As a result, feedback for the final simulated timestep may
+only be published after <code class="docutils literal notranslate"><span class="pre">close</span></code> and is not meant to drive another
+simulation step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The feedback value for <code class="docutils literal notranslate"><span class="pre">timestep</span></code>, the full retained queue when
+<code class="docutils literal notranslate"><span class="pre">timestep</span></code> is omitted, or <code class="docutils literal notranslate"><span class="pre">default</span></code> when no feedback exists.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any | None</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Feedback timing is asynchronous and not reproducible run to run. The
+head queue may be populated at slightly different times, and this
+bridge may read it at slightly different times. Simulation code should
+decide how to react whenever a signal becomes available, and must not
+rely on exactly when an analytics event becomes visible for simulation
+correctness.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Bridge.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/bridge.html#Bridge.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Bridge.send" title="Link to this definition">¶</a></dt>
+<dd><p>Make a chunk of data available to the analytics.</p>
+<p>This method stores the <code class="docutils literal notranslate"><span class="pre">chunk</span></code> in Ray’s object store, and
+sends a reference to the node actor. The method blocks until the
+data is processed by the node actor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array_name</strong> (<em>str</em>) – The name of the array this chunk belongs to.</p></li>
+<li><p><strong>chunk</strong> (<em>numpy.ndarray</em>) – The chunk of data to be sent to the analytics.</p></li>
+<li><p><strong>timestep</strong> (<em>int</em>) – The timestep index for this chunk of data.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The chunk is stored in Ray’s object store with the node actor as the owner,
+ensuring the reference persists even after the simulation script terminates.
+This method blocks until the node actor has the chunk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="deisa.ray.errors.html#deisa.ray.errors.ContractError" title="deisa.ray.errors.ContractError"><strong>ContractError</strong></a> – When the scheduling node detects a contract violation for the
+    provided chunk.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Blocks until the node actor processes the chunk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deisa.ray.Deisa">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">deisa.ray.</span></span><span class="sig-name descname"><span class="pre">Deisa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feedback_queue_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/deisa/ray/window_handler.html#Deisa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Deisa" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IDeisa</span></code></p>
+<p>Entry point that orchestrates analytics callbacks on Ray.</p>
+<p>Provides an API for registering sliding window callbacks and executing
+them as arrays arrive from simulation ranks.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Deisa.execute_callbacks">
+<span class="sig-name descname"><span class="pre">execute_callbacks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/window_handler.html#Deisa.execute_callbacks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Deisa.execute_callbacks" title="Link to this definition">¶</a></dt>
+<dd><p>Execute the registered simulation callback loop.</p>
+<p class="rubric">Notes</p>
+<p>Supports a single registered callback at present. Manages array
+retrieval from the head actor, windowed
+array delivery, and garbage collection between iterations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Deisa.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*callback_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CallbackArgs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exception_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExceptionHandler</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">IDeisa.__default_exception_handler&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">when</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal['AND'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'OR']</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AND'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="_modules/deisa/ray/window_handler.html#Deisa.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Deisa.register" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator that registers a sliding-window analytics callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*callback_args</strong> (<em>CallbackArgs</em>) – Array descriptions the callback should receive.</p></li>
+<li><p><strong>exception_handler</strong> (<em>Optional</em><em>[</em><em>Callable</em><em>]</em><em>, </em><em>optional</em>) – Handler invoked when the user callback raises. Defaults to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">deisa.core.IDeisa.__default_exception_handler()</span></code>.</p></li>
+<li><p><strong>when</strong> (<em>Literal</em><em>[</em><em>&quot;AND&quot;</em><em>, </em><em>&quot;OR&quot;</em><em>]</em><em>, </em><em>optional</em>) – Governs whether all arrays (<code class="docutils literal notranslate"><span class="pre">&quot;AND&quot;</span></code>) or any array (<code class="docutils literal notranslate"><span class="pre">&quot;OR&quot;</span></code>)
+must be available before the callback runs. Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;AND&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Decorator that registers <code class="docutils literal notranslate"><span class="pre">simulation_callback</span></code> with the window
+handler.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Deisa.register_callback">
+<span class="sig-name descname"><span class="pre">register_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*callback_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CallbackArgs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exception_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExceptionHandler</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">IDeisa.__default_exception_handler&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">when</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal['AND'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'OR']</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AND'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="_modules/deisa/ray/window_handler.html#Deisa.register_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Deisa.register_callback" title="Link to this definition">¶</a></dt>
+<dd><p>Register the analytics callback and array descriptions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>callback</strong> (<em>Callable</em>) – Function to run for each iteration; receives arrays as kwargs
+and <code class="docutils literal notranslate"><span class="pre">timestep</span></code>.</p></li>
+<li><p><strong>*callback_args</strong> (<em>CallbackArgs</em>) – Descriptions of arrays to stream to the callback (with optional
+sliding windows).
+Maximum iterations to execute. Default is a large sentinel.</p></li>
+<li><p><strong>exception_handler</strong> (<em>Optional</em><em>[</em><em>Callable</em><em>]</em>) – Exception handler to handle any exception thrown by simulation
+(like division by zero). Defaults to printing the error and moving on.</p></li>
+<li><p><strong>when</strong> (<em>Literal</em><em>[</em><em>'AND'</em><em>, </em><em>'OR'</em><em>]</em>) – When callback have multiple arrays, govern when callback should be called.
+<cite>AND</cite>: only call callback if ALL required arrays have been shared for a given timestep.
+<cite>OR</cite>: call callback if ANY array has been shared for a given timestep.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The original callback, allowing decorator-style usage.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deisa.ray.Deisa.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/deisa/ray/window_handler.html#Deisa.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#deisa.ray.Deisa.set" title="Link to this definition">¶</a></dt>
+<dd><p>Publish a feedback value for bridges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Hashable</em>) – Identifier for the shared value.</p></li>
+<li><p><strong>value</strong> (<em>Any</em>) – Value to store.</p></li>
+<li><p><strong>timestep</strong> (<em>Hashable</em>) – Timestep associated with <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Timestamped values are stored in a fixed-size queue on the head actor.
+For a given key, timesteps must be strictly increasing; publishing the
+same timestep twice or publishing an older timestep raises
+<code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code>.
+Bridges retrieve them collectively with
+<code class="docutils literal notranslate"><span class="pre">bridge.get(&quot;foo&quot;,</span> <span class="pre">timestep=t)</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 
@@ -429,7 +674,23 @@
             <ul>
 <li><a class="reference internal" href="#">deisa.ray package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-deisa.ray">Module contents</a></li>
+<li><a class="reference internal" href="#module-deisa.ray">Module contents</a><ul>
+<li><a class="reference internal" href="#deisa.ray.Bridge"><code class="docutils literal notranslate"><span class="pre">Bridge</span></code></a><ul>
+<li><a class="reference internal" href="#deisa.ray.Bridge.node_id"><code class="docutils literal notranslate"><span class="pre">Bridge.node_id</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Bridge.close"><code class="docutils literal notranslate"><span class="pre">Bridge.close()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Bridge.get"><code class="docutils literal notranslate"><span class="pre">Bridge.get()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Bridge.send"><code class="docutils literal notranslate"><span class="pre">Bridge.send()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deisa.ray.Deisa"><code class="docutils literal notranslate"><span class="pre">Deisa</span></code></a><ul>
+<li><a class="reference internal" href="#deisa.ray.Deisa.execute_callbacks"><code class="docutils literal notranslate"><span class="pre">Deisa.execute_callbacks()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Deisa.register"><code class="docutils literal notranslate"><span class="pre">Deisa.register()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Deisa.register_callback"><code class="docutils literal notranslate"><span class="pre">Deisa.register_callback()</span></code></a></li>
+<li><a class="reference internal" href="#deisa.ray.Deisa.set"><code class="docutils literal notranslate"><span class="pre">Deisa.set()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

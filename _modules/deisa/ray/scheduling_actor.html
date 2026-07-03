@@ -200,7 +200,6 @@
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../deisa.ray.html">deisa.ray package</a><input aria-label="Toggle navigation of deisa.ray package" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.bridge.html">deisa.ray.bridge module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.comm.html">deisa.ray.comm module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.config.html">deisa.ray.config module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.errors.html">deisa.ray.errors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../deisa.ray.head_node.html">deisa.ray.head_node module</a></li>
@@ -277,7 +276,7 @@
 <span class="sd">    - Collecting chunks of arrays sent by simulation nodes (via :class:`Bridge`)</span>
 <span class="sd">    - Registering its owned chunks with the head node</span>
 <span class="sd">    - Providing a small key/value channel (``set``, ``get``, ``delete``) for</span>
-<span class="sd">      non-chunked feedback between analytics and simulation.</span>
+<span class="sd">      feedback between analytics and simulation.</span>
 
 <span class="sd">    The :class:`SchedulingActor` subclass adds graph-scheduling behaviour on</span>
 <span class="sd">    top of this base functionality.</span>
@@ -299,9 +298,9 @@
 <span class="sd">    partial_arrays : AsyncDict[str, PartialArray]</span>
 <span class="sd">        Per-array containers that capture metadata and chunk references owned</span>
 <span class="sd">        by this node actor.</span>
-<span class="sd">    feedback_non_chunked : dict</span>
-<span class="sd">        Dictionary for storing non-chunked feedback values shared between</span>
-<span class="sd">        analytics and simulation.</span>
+<span class="sd">    feedback : dict</span>
+<span class="sd">        Dictionary for storing feedback values shared between analytics and</span>
+<span class="sd">        simulation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actor_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">arrays_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -320,119 +319,28 @@
 <span class="sd">        Registers the actor with the head node immediately so it can start</span>
 <span class="sd">        receiving metadata and chunk notifications.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_of_node</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">actor_id</span> <span class="o">=</span> <span class="n">actor_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">actor_handle</span> <span class="o">=</span> <span class="n">ray</span><span class="o">.</span><span class="n">get_runtime_context</span><span class="p">()</span><span class="o">.</span><span class="n">current_actor</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_ready_actor_with_retry</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;simulation_head&quot;</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;deisa_ray&quot;</span><span class="p">)</span>
+        <span class="c1"># TODO this function adds to self.scheduling_actors of the head node. But that attribute</span>
+        <span class="c1"># is only used in the method `list_scheduling_actors` of the head node. That method</span>
+        <span class="c1"># is only called by _scheduler.py and in `schedule_graph` of the scheduling actor.</span>
+        <span class="c1"># therefore it could be moved to the case of the distributed scheduler.</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">register_scheduling_actor</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span><span class="n">actor_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">actor_handle</span><span class="p">)</span>
 
         <span class="c1"># Keeps track of array metadata AND ref per timestep.</span>
         <span class="c1"># TODO: I think these two responsabilities could be separated.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">partial_arrays</span><span class="p">:</span> <span class="n">AsyncDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PartialArray</span><span class="p">]</span> <span class="o">=</span> <span class="n">AsyncDict</span><span class="p">()</span>
 
-        <span class="c1"># For non-chunked feedback between analytics and simulation</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">feedback_non_chunked</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">should_persist</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_finalized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finalization_lock</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="c1"># the number of chunks per array that a physical node (and therefore this actor) owns.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_nb_chunks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
-<div class="viewcode-block" id="NodeActorBase.set">
-<a class="viewcode-back" href="../../../deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.set">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">chunked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Store a feedback value shared between analytics and simulation.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        key : Hashable</span>
-<span class="sd">            Identifier for the feedback value.</span>
-<span class="sd">        value : Any</span>
-<span class="sd">            Value to store.</span>
-<span class="sd">        chunked : bool, optional</span>
-<span class="sd">            Placeholder for future chunked feedback support. Must remain</span>
-<span class="sd">            ``False`` today. Default is ``False``.</span>
-<span class="sd">        persist : bool</span>
-<span class="sd">            Whether the stored value should survive the next ``get`` call.</span>
-<span class="sd">            ``True`` retains the value until explicitly deleted.</span>
-
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        The ``*args`` and ``**kwargs`` parameters are accepted for forward</span>
-<span class="sd">        compatibility with future signatures but are currently unused.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">chunked</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">feedback_non_chunked</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">should_persist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">persist</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># TODO: implement chunked version</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="NodeActorBase.get">
-<a class="viewcode-back" href="../../../deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.get">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">chunked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Retrieve a feedback value previously stored with :meth:`set`.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        key : Hashable</span>
-<span class="sd">            Identifier of the requested value.</span>
-<span class="sd">        default : Any, optional</span>
-<span class="sd">            Value returned when ``key`` is not present. Default is ``None``.</span>
-<span class="sd">        chunked : bool, optional</span>
-<span class="sd">            Placeholder for chunked feedback retrieval. Must remain</span>
-<span class="sd">            ``False`` today. Default is ``False``.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Any</span>
-<span class="sd">            Stored value or ``default`` if missing.</span>
-
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        NotImplementedError</span>
-<span class="sd">            Chunked feedback retrieval is not yet implemented.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feedback_non_chunked</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
-        <span class="n">persist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_persist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">chunked</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">persist</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">val</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="NodeActorBase.delete">
-<a class="viewcode-back" href="../../../deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.delete">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Delete a feedback value if present.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        key : Hashable</span>
-<span class="sd">            Identifier to remove from the non-chunked feedback store.</span>
-
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        Missing keys are ignored to keep the call idempotent.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">feedback_non_chunked</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">should_persist</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_create_or_retrieve_partial_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nb_chunks_of_node</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PartialArray</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_or_retrieve_partial_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PartialArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the partial-array container for ``array_name``, creating it if missing.</span>
 
@@ -440,9 +348,6 @@
 <span class="sd">        ----------</span>
 <span class="sd">        array_name : str</span>
 <span class="sd">            Name of the array being assembled on this node.</span>
-<span class="sd">        nb_chunks_of_node : int</span>
-<span class="sd">            Number of chunks contributed by this node. Stored on the actor for</span>
-<span class="sd">            later sanity checks when receiving payloads.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -451,74 +356,108 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">array_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">partial_arrays</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">partial_arrays</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">PartialArray</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_of_node</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">nb_chunks_of_node</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_nb_chunks</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">partial_arrays</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span>
 
 <div class="viewcode-block" id="NodeActorBase.register_chunk_meta">
 <a class="viewcode-back" href="../../../deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.register_chunk_meta">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">register_chunk_meta</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_chunk_meta</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">bridge_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">chunk_shape</span><span class="p">,</span>
-        <span class="n">nb_chunks_per_dim</span><span class="p">,</span>
-        <span class="n">nb_chunks_of_node</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">dtype</span><span class="p">,</span>
+        <span class="n">global_shape</span><span class="p">,</span>
         <span class="n">chunk_position</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Register chunk metadata contributed by a bridge on this node.</span>
+<span class="sd">        Register metadata for a chunk owned by this node actor.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        bridge_id : int</span>
-<span class="sd">            Identifier of the bridge sending the chunk.</span>
+<span class="sd">            Identifier of the bridge that owns the chunk.</span>
 <span class="sd">        array_name : str</span>
-<span class="sd">            Name of the array being populated.</span>
+<span class="sd">            Name of the array the chunk belongs to.</span>
 <span class="sd">        chunk_shape : tuple[int, ...]</span>
-<span class="sd">            Shape of the chunk owned by this bridge.</span>
-<span class="sd">        nb_chunks_per_dim : tuple[int, ...]</span>
-<span class="sd">            Number of chunks per dimension in the global decomposition.</span>
-<span class="sd">        nb_chunks_of_node : int</span>
-<span class="sd">            Number of chunks contributed by this node for the array.</span>
-<span class="sd">        dtype : Any</span>
-<span class="sd">            NumPy dtype of the chunk.</span>
+<span class="sd">            Shape of this bridge&#39;s chunk.</span>
+<span class="sd">        global_shape : tuple[int, ...]</span>
+<span class="sd">            Full shape of the distributed array.</span>
 <span class="sd">        chunk_position : tuple[int, ...]</span>
-<span class="sd">            Position of this chunk in the global grid.</span>
+<span class="sd">            Position of the chunk in the global chunk grid.</span>
 
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        Once all bridges on the node have registered, the node actor forwards</span>
-<span class="sd">        the consolidated metadata to the head actor and toggles the per-array</span>
-<span class="sd">        event so concurrent callers can proceed. Until that point additional</span>
-<span class="sd">        callers block on ``ready_event``.</span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the derived global chunk grid for ``array_name`` is</span>
+<span class="sd">            inconsistent with earlier registrations.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">wait_until_analytics_ready</span><span class="o">.</span><span class="n">remote</span><span class="p">()</span>
-
-        <span class="n">partial_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_retrieve_partial_array</span><span class="p">(</span><span class="n">array_name</span><span class="p">,</span> <span class="n">nb_chunks_of_node</span><span class="p">)</span>
+        <span class="n">partial_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_retrieve_partial_array</span><span class="p">(</span><span class="n">array_name</span><span class="p">)</span>
 
         <span class="c1"># add metadata for this array</span>
         <span class="n">partial_array</span><span class="o">.</span><span class="n">chunks_contained_meta</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">bridge_id</span><span class="p">,</span> <span class="n">chunk_position</span><span class="p">,</span> <span class="n">chunk_shape</span><span class="p">))</span>
         <span class="n">partial_array</span><span class="o">.</span><span class="n">bid_to_pos</span><span class="p">[</span><span class="n">bridge_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">chunk_position</span>
 
-        <span class="c1"># Technically, no race conditions should happen since its calls to the same actor method</span>
-        <span class="c1"># happen synchrnously (in ray). Since the method is async, it will run the method one a at</span>
-        <span class="c1"># a time, and give control to async runtime when it encounters await below.</span>
-        <span class="c1"># HOWEVER - with certain implementation of MPI, there have been problems here.</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">partial_array</span><span class="o">.</span><span class="n">chunks_contained_meta</span><span class="p">)</span> <span class="o">==</span> <span class="n">nb_chunks_of_node</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">register_partial_array</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">enable_task_events</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">actor_id</span><span class="p">,</span>
-                <span class="n">array_name</span><span class="p">,</span>
-                <span class="n">dtype</span><span class="p">,</span>
-                <span class="c1"># TODO I could figure this out from the global size and the chunk shape</span>
-                <span class="n">nb_chunks_per_dim</span><span class="p">,</span>
-                <span class="nb">list</span><span class="p">(</span><span class="n">partial_array</span><span class="o">.</span><span class="n">chunks_contained_meta</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="c1"># per array async event</span>
-            <span class="n">partial_array</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
-            <span class="n">partial_array</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="c1"># increase the counter of chunks of the node for this array.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_nb_chunks</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">nb_chunks_per_dim</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">global_dim</span> <span class="o">//</span> <span class="n">chunk_dim</span> <span class="k">for</span> <span class="n">global_dim</span><span class="p">,</span> <span class="n">chunk_dim</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">global_shape</span><span class="p">,</span> <span class="n">chunk_shape</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">array_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">==</span> <span class="n">nb_chunks_per_dim</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">partial_array</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span><span class="p">[</span><span class="n">array_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">nb_chunks_per_dim</span></div>
+
+
+    <span class="c1"># it also should be blocking in the sense that all bridges should call it, but only the first one should trigger the registration with the head actor,</span>
+    <span class="c1"># and all other bridges in the meantime should wait for the registration to be done without proceeding further.</span>
+<div class="viewcode-block" id="NodeActorBase.finalize_registration">
+<a class="viewcode-back" href="../../../deisa.ray.scheduling_actor.html#deisa.ray.scheduling_actor.NodeActorBase.finalize_registration">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">finalize_registration</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publish this node actor&#39;s registered chunk ownership to the head actor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            The method is idempotent; subsequent calls return immediately</span>
+<span class="sd">            after successful finalization.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the number of registered chunk metadata entries does not match</span>
+<span class="sd">            the local chunk count collected from bridges.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The method waits until analytics has signaled readiness before</span>
+<span class="sd">        registering partial arrays. A lock ensures concurrent calls from</span>
+<span class="sd">        multiple bridges sharing the same actor perform registration once.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">finalization_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_finalized</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">wait_until_analytics_ready</span><span class="o">.</span><span class="n">remote</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">partial_array</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">partial_arrays</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># since this method is called after barrier, we are sure all the chunks have been registered.</span>
+                <span class="n">local_chunks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_nb_chunks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">partial_array</span><span class="o">.</span><span class="n">chunks_contained_meta</span><span class="p">)</span> <span class="o">==</span> <span class="n">local_chunks</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="s2">&quot;Sanity check failed: number of registered chunks does not match expected count for this node.&quot;</span>
+                <span class="p">)</span>
+
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">register_partial_array</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">enable_task_events</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">actor_id</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="c1"># TODO I could figure this out from the global size and the chunk shape</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_per_dim</span><span class="p">[</span><span class="n">name</span><span class="p">],</span>
+                    <span class="nb">list</span><span class="p">(</span><span class="n">partial_array</span><span class="o">.</span><span class="n">chunks_contained_meta</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_finalized</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="NodeActorBase.ready">
@@ -551,10 +490,8 @@
         <span class="n">bridge_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">chunk_ref</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span><span class="p">],</span>
+        <span class="n">dtype</span><span class="p">,</span>
         <span class="n">timestep</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">chunked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a chunk of data to this node actor.</span>
@@ -572,12 +509,10 @@
 <span class="sd">        chunk_ref : list[ray.ObjectRef]</span>
 <span class="sd">            Single-element list containing the Ray ObjectRef to the chunk</span>
 <span class="sd">            data. The extra list level is kept for Dask compatibility.</span>
+<span class="sd">        dtype : np.dtype</span>
+<span class="sd">            NumPy dtype read from the chunk before it was stored in Ray.</span>
 <span class="sd">        timestep : int</span>
 <span class="sd">            Timestep index the chunk belongs to.</span>
-<span class="sd">        chunked : bool, optional</span>
-<span class="sd">            Reserved for future multi-chunk sends. Must remain ``True`` for</span>
-<span class="sd">            the current workflow. Default is ``True``.</span>
-
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        None</span>
@@ -612,30 +547,35 @@
 
         <span class="k">if</span> <span class="n">timestep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">partial_array</span><span class="o">.</span><span class="n">per_timestep_arrays</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">partial_array</span><span class="o">.</span><span class="n">per_timestep_arrays</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArrayPerTimestep</span><span class="p">()</span>
+            <span class="n">partial_array</span><span class="o">.</span><span class="n">per_timestep_arrays</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span><span class="o">.</span><span class="n">chunks_ready_future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span><span class="p">()</span>
         <span class="n">array_timestep</span> <span class="o">=</span> <span class="n">partial_array</span><span class="o">.</span><span class="n">per_timestep_arrays</span><span class="p">[</span><span class="n">timestep</span><span class="p">]</span>
 
         <span class="n">chunk_ref</span><span class="p">:</span> <span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span> <span class="o">=</span> <span class="n">chunk_ref</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">array_timestep</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">[</span><span class="n">bridge_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">chunk_ref</span>
+        <span class="k">if</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">array_timestep</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">dtype</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">array_timestep</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_chunks_of_node</span><span class="p">[</span><span class="n">array_name</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">array_timestep</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_nb_chunks</span><span class="p">[</span><span class="n">array_name</span><span class="p">]:</span>
             <span class="n">pos_to_ref</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">assert</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
             <span class="k">for</span> <span class="n">bridge_id</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">local_chunks</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ray</span><span class="o">.</span><span class="n">ObjectRef</span><span class="p">)</span>
 
                 <span class="n">pos_to_ref</span><span class="p">[</span><span class="n">partial_array</span><span class="o">.</span><span class="n">bid_to_pos</span><span class="p">[</span><span class="n">bridge_id</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ref</span>
-
                 <span class="n">array_timestep</span><span class="o">.</span><span class="n">local_chunks</span><span class="p">[</span><span class="n">bridge_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
 
             <span class="c1"># TODO rename</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">chunks_ready</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">enable_task_events</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span>
-                <span class="n">array_name</span><span class="p">,</span> <span class="n">timestep</span><span class="p">,</span> <span class="n">pos_to_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">actor_id</span>
+                <span class="n">array_name</span><span class="p">,</span> <span class="n">timestep</span><span class="p">,</span> <span class="n">pos_to_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">actor_id</span><span class="p">,</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">dtype</span>
             <span class="p">)</span>
 
-            <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
-            <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+                <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_event</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div>
+            <span class="k">await</span> <span class="n">array_timestep</span><span class="o">.</span><span class="n">chunks_ready_future</span></div>
 </div>
 
 
